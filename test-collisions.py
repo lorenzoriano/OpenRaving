@@ -23,6 +23,9 @@ def make_orth_basis(x_ax):
         return np.c_[x_ax, y_ax, z_ax]
 
 def generate_random_pos(robot):
+    """Generate a random position for the robot within the boundaries of the 
+    world.
+    """
     max_x = 2.5
     max_y = 2.5
     max_th = np.pi
@@ -41,13 +44,19 @@ def generate_random_pos(robot):
     return T
 
 def check_reachable(manip, obj):
+    """Check if the robot can reach an object. The object is reachable if the 
+    manipulator can be placed over it (with no collision checking).
+        
+    Right now the target angles are the angles between the manipulator and the
+    object, but this is not correct!
+    """
     
     #all of this is to get the angles between the manipulator and the object
     obj_pos = obj.GetTransform()[:3,-1]
-    manip_pos = manip.GetTransform()[:3,-1]
-    openravepy.raveLogInfo("Manipulator position: " + str(manip_pos))
-    
+    manip_pos = manip.GetTransform()[:3,-1]    
     rot_mat = make_orth_basis(obj_pos - manip_pos)
+    
+    #Create the target position
     T = np.eye(4)
     T[:3, :-1] = rot_mat
     T[:3,-1] = obj_pos
@@ -56,6 +65,10 @@ def check_reachable(manip, obj):
     
 
 def main():
+    """Loads an environment and generates random positions until the robot can
+    reach an oject from a collision-free pose.
+    """
+    
     env = openravepy.Environment()
     env.SetViewer('qtcoin')
     env.Load('data/pr2test1.env.xml')
