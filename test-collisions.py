@@ -1,3 +1,5 @@
+#! /usr/bin/python
+
 import openravepy
 import time
 import numpy as np
