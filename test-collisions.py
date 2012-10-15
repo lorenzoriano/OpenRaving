@@ -85,7 +85,7 @@ def main():
     env = openravepy.Environment()    
     env.Load('data/pr2test1.env.xml')
     robot=env.GetRobots()[0]
-    mug =[b for b in env.GetBodies() if b.GetName() == 'mug1'][0]
+    mug = env.GetKinBody('mug1')
     
     manip = robot.SetActiveManipulator('leftarm_torso')
     ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
