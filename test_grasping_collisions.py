@@ -29,8 +29,8 @@ def generate_random_pos(robot, obj_to_grasp = None):
         max_th = np.pi
     else:
         obj_pos = obj_to_grasp.GetTransform()[:3,-1]
-        max_x = obj_pos[0] - 1.0
-        max_y = obj_pos[1] - 1.0
+        max_x = obj_pos[0] + 1.0
+        max_y = obj_pos[1] + 1.0
     
     
     x = np.random.uniform(-max_x, max_x)
@@ -62,22 +62,46 @@ def check_reachable(manip, grasping_poses):
             return sol
     return None
 
-class CustomIkFilter(object):
-    def __init__(self, object_to_collide_with):
-        self.report = None
-        self.object_to_collide_with = object_to_collide_with.GetName()
-        
-    def __call__(self, values, manip, ikparam):
-        if self.report.plink2 is None:
-            return openravepy,IkReturnAction.Success
-        
-        collision = self.report.plink2.GetPartent().GetName()
-        openravepy.raveLogInfo("Report says collision with %s" % collision)
-        if collision == self.object_to_collide_with:
-            return openravepy,IkReturnAction.Success
-        else:
-            return openravepy.IkReturnAction.Reject
+def get_collision_free_grasping_pose(robot, object_to_grasp, 
+                                         max_trials = 100):
+    
+    env = robot.GetEnv()
+    robot_pose = robot.GetTransform()
+    manip = robot.GetActiveManipulator()
+    
+    ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
+            robot,iktype=openravepy.IkParameterization.Type.Transform6D)
+    if not ikmodel.load():
+        ikmodel.autogenerate()    
 
+    grasping_poses = generate_grasping_pose(robot, object_to_grasp)
+    openravepy.raveLogInfo("I've got %d grasping poses" % len(grasping_poses))
+    env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
+    
+    collision = env.CheckCollision(robot)
+    sol = check_reachable(manip, grasping_poses)
+    isreachable = sol is not None
+    
+    num_trial = 0
+    while ((collision) or (not isreachable)) and (num_trial < max_trials):
+        num_trial +=1
+        robot_pose = generate_random_pos(robot, object_to_grasp)
+        with robot:
+            robot.SetTransform(robot_pose) 
+            report = openravepy.CollisionReport()
+            collision = env.CheckCollision(robot, report=report)
+            
+            if not collision:
+                sol = check_reachable(manip, grasping_poses)
+                isreachable = sol is not None
+            else:
+                continue
+    
+    if (sol is None) or collision:
+        raise ValueError("No collision free grasping pose found within %d steps" % max_trials)    
+    else:
+        return (robot_pose, sol)
+    
 def main():
     """Loads an environment and generates random positions until the robot can
     reach an oject from a collision-free pose.
@@ -118,6 +142,8 @@ def main():
         collision = env.CheckCollision(robot,report=report)
         num_contacts = len(report.contacts)
         
+        if collision:
+            continue
         sol = check_reachable(manip, grasping_poses)
         isreachable = sol is not None
 
@@ -132,13 +158,39 @@ def main():
     sol = check_reachable(manip, grasping_poses)
     if sol is not None:
         robot.SetDOFValues(sol, manip.GetArmIndices())
-        openravepy.raveLogInfo("Done!!")
+        openravepy.raveLogInfo("Done in %d steps" % num_trials)
     else:
         openravepy.raveLogInfo("No solution????")
     
+def main2():
+    """Loads an environment and generates random positions until the robot can
+    reach an oject from a collision-free pose.
+    """
+    
+    env = openravepy.Environment()    
+    env.Load('data/pr2test1.env.xml')
+    env.SetViewer('qtcoin')
+    robot=env.GetRobots()[0]
+    manip = robot.SetActiveManipulator('rightarm')
+    
+    pose = generate_random_pos(robot) 
+    robot.SetTransform(pose)        
 
+    mug = env.GetKinBody('mug1')
+    
+    try:
+        pose, sol = get_collision_free_grasping_pose(robot,
+                                                     mug,
+                                                     1000)
+        robot.SetTransform(pose)
+        robot.SetDOFValues(sol, manip.GetArmIndices())        
+        openravepy.raveLogInfo("Done!!")        
+    except ValueError, e:
+        openravepy.raveLogError("Error while trying to find a pose: %s" % e)
+        return
+        
 if __name__ == "__main__":
-    main()
+    main2()
     raw_input("Press a button to continue")
 
     
