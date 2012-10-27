@@ -53,7 +53,7 @@ class SimpleNavigationPlanning:
                                            maxiter = 3000,
                                            steplength = 0.1,
                                            execute = execute,
-                                           outputtraj = True
+                                           outputtrajobj = True
                                            ) 
         if res is None:
             raise ValueError("Could not find a trajectory")
