@@ -37,7 +37,7 @@ def generate_pose_to_reach(env, robot, obj_to_grasp, tries_per_grasp = 100,
         #grasp_pose = np.dot(T_ing, Tgrasp)        
         grasp_pose = Tgrasp
         densityfn, samplerfn, bounds = irmodel.computeBaseDistribution(grasp_pose,
-                                                                       logllthresh=0.1)
+                                                                       logllthresh=-100)
         if samplerfn is None:
             openravepy.raveLogWarn("No grasp!")
             continue
@@ -62,7 +62,7 @@ def main():
     env = openravepy.Environment()    
     env.Load('data/pr2test1.env.xml')
     robot=env.GetRobots()[0]
-    manip = robot.SetActiveManipulator('leftarm')
+    manip = robot.SetActiveManipulator('rightarm')
 
     v = robot.GetActiveDOFValues()
     v[robot.GetJoint('l_shoulder_pan_joint').GetDOFIndex()]= 3.14/2

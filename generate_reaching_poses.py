@@ -8,7 +8,6 @@ import utils
 def generate_manip_above_surface(obj, num_poses = 20):
     
     gripper_angle = (np.pi, 0., 0) #just got this from trial and test
-    #gripper_angle = (0., 0., 0)    
     rot_mat = openravepy.rotationMatrixFromAxisAngle(gripper_angle)
     
     ab = obj.ComputeAABB()
@@ -57,7 +56,7 @@ def generate_grasping_pose(robot, obj_to_grasp, use_general_grasps=True):
 
     openravepy.raveLogInfo("Generating grasps")
     validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
-                                               checkik = False,
+                                               checkik = True,
                                                checkgrasper = False)
     openravepy.raveLogInfo("Number of valid grasps: %d" % len(validgrasps))
     return [gmodel.getGlobalGraspTransform(grasp) for grasp in validgrasps]
@@ -132,18 +131,21 @@ def get_collision_free_grasping_pose(robot, object_to_grasp,
     if not ikmodel.load():
         ikmodel.autogenerate()    
 
-    grasping_poses = generate_grasping_pose(robot, object_to_grasp)
+    grasping_poses = generate_grasping_pose(robot, object_to_grasp,
+                                            use_general_grasps)
     openravepy.raveLogInfo("I've got %d grasping poses" % len(grasping_poses))
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
     sol = check_reachable(manip, grasping_poses)
     isreachable = sol is not None
+    min_torso, max_torso = utils.get_pr2_torso_limit(robot)
     
     num_trial = 0
     with robot:
         while ((collision) or (not isreachable)) and (num_trial < max_trials):
             num_trial +=1
+            torso_angle = move_random_torso(robot, min_torso, max_torso)
             robot_pose = generate_random_pos(robot, object_to_grasp)
             
             robot.SetTransform(robot_pose) 
@@ -151,6 +153,8 @@ def get_collision_free_grasping_pose(robot, object_to_grasp,
             collision = env.CheckCollision(robot, report=report)
             
             if not collision:
+                grasping_poses = generate_grasping_pose(robot, object_to_grasp,
+                                                        use_general_grasps)                
                 sol = check_reachable(manip, grasping_poses)
                 isreachable = sol is not None
             else:
@@ -159,7 +163,15 @@ def get_collision_free_grasping_pose(robot, object_to_grasp,
     if (sol is None) or collision:
         raise ValueError("No collision free grasping pose found within %d steps" % max_trials)    
     else:
-        return (robot_pose, sol)
+        return (robot_pose, sol, torso_angle)
+
+def move_random_torso(robot, min_angle, max_angle, joint_index=[]):
+    if joint_index == []:
+        joint_index.append(robot.GetJointIndex('torso_lift_joint'))
+    
+    angle = np.random.uniform(min_angle, max_angle)
+    robot.SetDOFValues([angle],  joint_index)
+    return angle
 
 def get_collision_free_surface_pose(robot, obj, 
                                          max_trials = 100,
@@ -181,13 +193,16 @@ def get_collision_free_surface_pose(robot, obj,
     sol = check_reachable(manip, grasping_poses)
     isreachable = sol is not None
     
+    min_torso, max_torso = utils.get_pr2_torso_limit(robot)
+    
     num_trial = 0
     with robot:
         while ((collision) or (not isreachable)) and (num_trial < max_trials):
             num_trial +=1
+            move_random_torso(robot, min_torso, max_torso)
             robot_pose = generate_random_pos(robot, obj)
             
-            robot.SetTransform(robot_pose) 
+            robot.SetTransform(robot_pose)
             report = openravepy.CollisionReport()
             collision = env.CheckCollision(robot, report=report)
             
