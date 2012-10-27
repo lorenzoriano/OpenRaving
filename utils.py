@@ -181,6 +181,10 @@ def pr2_tuck_arm(robot):
                        robot.GetManipulator("rightarm").GetArmIndices())
     robot.SetDOFValues(pr2_l_arm_tucked, 
                        robot.GetManipulator("leftarm").GetArmIndices())
+
+def get_pr2_torso_limit(robot):
+    torso = robot.GetJoint('torso_lift_joint')
+    return torso.GetLimits()
     
 def get_environment_limits(env, robot= None):
     """Calculates the limits of an environment, If robot is not None then then
