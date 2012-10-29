@@ -199,7 +199,7 @@ def get_collision_free_surface_pose(robot, obj,
     with robot:
         while ((collision) or (not isreachable)) and (num_trial < max_trials):
             num_trial +=1
-            move_random_torso(robot, min_torso, max_torso)
+            torso_angle = move_random_torso(robot, min_torso, max_torso)
             robot_pose = generate_random_pos(robot, obj)
             
             robot.SetTransform(robot_pose)
@@ -216,7 +216,7 @@ def get_collision_free_surface_pose(robot, obj,
     if (sol is None) or collision:
         raise ValueError("No collision free grasping pose found within %d steps" % max_trials)    
     else:
-        return (robot_pose, sol)
+        return (robot_pose, sol, torso_angle)
 
 def main():
     """Loads an environment and generates random positions until the robot can
