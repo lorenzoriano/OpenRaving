@@ -5,20 +5,18 @@ import numpy as np
 
 import utils
 
+class GraspingPoseError(Exception):
+    pass
+
 def generate_manip_above_surface(obj, num_poses = 20):
     
     gripper_angle = (np.pi, 0., 0) #just got this from trial and test
     rot_mat = openravepy.rotationMatrixFromAxisAngle(gripper_angle)
     
-    ab = obj.ComputeAABB()
-    max_x = ab.pos()[0] + ab.extents()[0]
-    min_x = ab.pos()[0] - ab.extents()[0]
-    
-    max_y = ab.pos()[1] + ab.extents()[1]
-    min_y = ab.pos()[1] - ab.extents()[1] 
+    min_x, max_x, min_y, max_y, z = utils.get_object_limits(obj)
     
     gripper_height = 0.18
-    z = ab.pos()[2] + ab.extents()[2] + gripper_height + 0.03
+    z += gripper_height + 0.03
     
     poses = []
     for _ in range(num_poses):
@@ -30,8 +28,22 @@ def generate_manip_above_surface(obj, num_poses = 20):
         T[:3,3] = [x,y,z]
         yield T
 
-def generate_grasping_pose(robot, obj_to_grasp, use_general_grasps=True):
-    """Generator function with all the valid grasps for object obj_to_grasp.
+def generate_grasping_pose(robot, 
+                           obj_to_grasp, 
+                           use_general_grasps=True,
+                           checkik = True):
+    """Returns a list with all the valid grasps for object obj_to_grasp.
+    
+    Parameters:
+    robot: an OpenRave robot
+    obj_to_grasp: a KinBody that the robot should grasp
+    use_general_grasps: if True, don't calculate actual grasp points, but use
+     a pre-generated list. It is much faster if a grasping model has not been
+     generated.
+    checkik: passed to GraspingModel.computeValidGrasps
+    
+    Returns:
+    a list of Transformation matrices, one for each valid grasping pose
     """        
     
     class __Options(object):
@@ -56,7 +68,7 @@ def generate_grasping_pose(robot, obj_to_grasp, use_general_grasps=True):
 
     openravepy.raveLogInfo("Generating grasps")
     validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
-                                               checkik = True,
+                                               checkik = checkik,
                                                checkgrasper = False)
     openravepy.raveLogInfo("Number of valid grasps: %d" % len(validgrasps))
     return [gmodel.getGlobalGraspTransform(grasp) for grasp in validgrasps]
@@ -102,28 +114,56 @@ def generate_random_pos(robot, obj_to_grasp = None):
     return T
 
 
-def check_reachable(manip, grasping_poses):
+def check_reachable(manip, grasping_poses, only_reachable = False):
     """Check if the robot can reach at least one pose 
 
     Parameters:
     manip: a Manipulator instance
     grasping_poses: a list of (4x4 matrix). 
+    only_reachable: do not check for collisions
     """
     
+    if len(grasping_poses) == 0:
+        return None
+    if only_reachable:
+        options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions 
+                   )
+    else:
+        options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions |
+                   openravepy.IkFilterOptions.CheckEnvCollisions)
     for pose in grasping_poses:
         sol = manip.FindIKSolution(pose, 
-                               openravepy.IkFilterOptions.IgnoreEndEffectorCollisions |
-                               openravepy.IkFilterOptions.CheckEnvCollisions)
+                                   options
+                                   )
         if sol is not None:
             return sol
     return None
 
 def get_collision_free_grasping_pose(robot, object_to_grasp, 
                                          max_trials = 100,
-                                         use_general_grasps = True):
+                                         use_general_grasps = True,
+                                         ):
+    """Returns the position from where the robot can grasp an object.
+    
+    Parameters:
+    robot: an OpenRave robot instance
+    object_to_grasp: a KinBody that the robot should grasp
+    max_trials: how many attempts before giving up
+    use_general_grasps: f True, don't calculate actual grasp points, but use
+     a pre-generated list. It is much faster if a grasping model has not been
+     generated.
+     
+    Returns:
+    (robot_pose, sol, torso_angle): the robot position (as a transformation matrix),
+    the active manipulator angles and the torso joint angle from where the robot
+    can grasp an object.
+    
+    Raises GraspingPoseError if no valid solution is found.
+    """
     
     env = robot.GetEnv()
     robot_pose = robot.GetTransform()
+    torso_angle = robot.GetJoint("torso_lift_joint").GetValues()[0]
     manip = robot.GetActiveManipulator()
     
     ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
@@ -153,15 +193,17 @@ def get_collision_free_grasping_pose(robot, object_to_grasp,
             collision = env.CheckCollision(robot, report=report)
             
             if not collision:
-                grasping_poses = generate_grasping_pose(robot, object_to_grasp,
+                grasping_poses = generate_grasping_pose(robot, 
+                                                        object_to_grasp,
                                                         use_general_grasps)                
                 sol = check_reachable(manip, grasping_poses)
-                isreachable = sol is not None
+                isreachable = sol is not None                
             else:
                 continue
 
     if (sol is None) or collision:
-        raise ValueError("No collision free grasping pose found within %d steps" % max_trials)    
+        e = GraspingPoseError("No collision free grasping pose found within %d steps" % max_trials)    
+        raise e
     else:
         return (robot_pose, sol, torso_angle)
 
