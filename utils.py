@@ -1,4 +1,5 @@
 import numpy as np
+import openravepy
 
 pre_grasps = np.array([[ -3.14269681e-01,   1.11111111e-01,   9.42809042e-01,
                          -8.88888889e-01,   3.14269681e-01,  -3.33333333e-01,
@@ -232,3 +233,78 @@ def test_position(manip, env, gripper_angle = None):
         print "NO SOLUTION"
     
     return arrow
+
+def get_object_limits(obj):
+    """Returns the bounding box of an object.
+    
+    Returns: min_x, max_x, min_y, max_y, z
+    """
+    
+    ab = obj.ComputeAABB()
+    max_x = ab.pos()[0] + ab.extents()[0]
+    min_x = ab.pos()[0] - ab.extents()[0]
+    
+    max_y = ab.pos()[1] + ab.extents()[1]
+    min_y = ab.pos()[1] - ab.extents()[1]     
+    z = ab.pos()[2] + ab.extents()[2]
+    
+    return min_x, max_x, min_y, max_y, z
+    
+def create_random_object(surface, env, dimensions, name=None):
+    extent_x, extent_y, extent_z = dimensions
+    min_x, max_x, min_y, max_y, z = get_object_limits(surface)
+    z = z + extent_z + 0.00
+    
+    x = np.random.uniform(min_x, max_x)
+    y = np.random.uniform(min_y, max_y)
+    values = [0,0,0, extent_x, extent_y, extent_z]
+    body = openravepy.RaveCreateKinBody(env,'')
+    if name is not None:
+        body.SetName(name)    
+    else:
+        body.SetName("random_object")
+        
+    body.InitFromBoxes(np.array([values]), True)
+    T = body.GetTransform()
+    T[:,-1] = [x,y,z,1]
+    body.SetTransform(T)
+    if name is not None:
+        env.Add(body, False)
+    else:
+        env.Add(body, True)
+    return body
+
+def create_collision_free_random_object(surface, env, dimensions, 
+                                        name = None,
+                                        num_trials = 20
+                                        ):
+    
+    env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)
+    for iteration in xrange(num_trials):        
+        body = create_random_object(surface, env, dimensions, name)
+        report = openravepy.CollisionReport()
+        collision = env.CheckCollision(body, report)
+        if collision:
+            if report.plink2.GetParent() == surface:
+                #only collision is with the surface, everything is ok
+                break
+            else:
+                #colliding with something else
+                env.Remove(body)
+                body = None
+        else:
+            break
+        
+    return body
+            
+def get_all_collisions(obj, env):
+    """Returns a set with all the objects in collision with obj, empty if no
+    collision """
+    collisions = set()
+    report = openravepy.CollisionReport()
+    for link in obj.GetLinks():
+        if env.CheckCollision(link, report=report):
+            collisions.add(report.plink2.GetParent())
+    
+    return collisions
+
