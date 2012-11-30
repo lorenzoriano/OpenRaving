@@ -26,7 +26,9 @@ def generate_manip_above_surface(obj, num_poses = 20):
         T = np.eye(4)
         T[:3,:3] = rot_mat
         T[:3,3] = [x,y,z]
-        yield T
+        poses.append(T)
+    
+    return poses
 
 def generate_grasping_pose(robot, 
                            obj_to_grasp, 
@@ -79,8 +81,8 @@ def generate_random_pos(robot, obj_to_grasp = None):
     """
     
     T = robot.GetTransform()
-    if obj_to_grasp is None:
-        envmin, envmax = utils.get_environment_limits(robot.GetEnv(), robot)
+    envmin, envmax = utils.get_environment_limits(robot.GetEnv(), robot)
+    if obj_to_grasp is None:        
         max_x = envmax[0]
         max_y = envmax[1]
         max_th = np.pi
@@ -89,10 +91,10 @@ def generate_random_pos(robot, obj_to_grasp = None):
         min_th = np.pi        
     else:
         obj_pos = obj_to_grasp.GetTransform()[:3,-1]
-        max_x = obj_pos[0] + 1.2
-        max_y = obj_pos[1] + 1.2
-        min_x = obj_pos[0] - 1.2
-        min_y = obj_pos[1] - 1.2        
+        max_x = min(obj_pos[0] + 1.2, envmax[0])
+        max_y = min(obj_pos[1] + 1.2, envmax[1])
+        min_x = max(obj_pos[0] - 1.2, envmin[0])
+        min_y = max(obj_pos[1] - 1.2, envmin[1])
     
     #print "X ", (min_x, max_x), " Y: ", (min_y, max_y)
     x = np.random.uniform(min_x, max_x)
@@ -139,10 +141,11 @@ def check_reachable(manip, grasping_poses, only_reachable = False):
             return sol
     return None
 
-def get_collision_free_grasping_pose(robot, object_to_grasp, 
-                                         max_trials = 100,
-                                         use_general_grasps = True,
-                                         ):
+def get_collision_free_grasping_pose(robot,
+                                     object_to_grasp, 
+                                     max_trials = 100,
+                                     use_general_grasps = True,
+                                     ):
     """Returns the position from where the robot can grasp an object.
     
     Parameters:
@@ -207,6 +210,73 @@ def get_collision_free_grasping_pose(robot, object_to_grasp,
     else:
         return (robot_pose, sol, torso_angle)
 
+def get_torso_grasping_pose(robot,
+                                     object_to_grasp, 
+                                     max_trials = 100,
+                                     use_general_grasps = True,
+                                     ):
+    """Returns the torso height from where the robot can grasp an object.
+    
+    Parameters:
+    robot: an OpenRave robot instance
+    object_to_grasp: a KinBody that the robot should grasp
+    max_trials: how many attempts before giving up
+    use_general_grasps: f True, don't calculate actual grasp points, but use
+     a pre-generated list. It is much faster if a grasping model has not been
+     generated.
+     
+    Returns:
+    (sol, torso_angle): ,
+    the active manipulator angles and the torso joint angle from where the robot
+    can grasp an object.
+    
+    Raises GraspingPoseError if no valid solution is found.
+    """
+    
+    env = robot.GetEnv()
+    robot_pose = robot.GetTransform()
+    torso_angle = robot.GetJoint("torso_lift_joint").GetValues()[0]
+    manip = robot.GetActiveManipulator()
+    
+    ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
+            robot,iktype=openravepy.IkParameterization.Type.Transform6D)
+    if not ikmodel.load():
+        ikmodel.autogenerate()    
+
+    grasping_poses = generate_grasping_pose(robot, object_to_grasp,
+                                            use_general_grasps)
+    openravepy.raveLogInfo("I've got %d grasping poses" % len(grasping_poses))
+    env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
+    
+    collision = env.CheckCollision(robot)
+    sol = check_reachable(manip, grasping_poses)
+    isreachable = sol is not None
+    min_torso, max_torso = utils.get_pr2_torso_limit(robot)
+    
+    num_trial = 0
+    with robot:
+        while ((collision) or (not isreachable)) and (num_trial < max_trials):
+            num_trial +=1
+            torso_angle = move_random_torso(robot, min_torso, max_torso)
+            
+            report = openravepy.CollisionReport()
+            collision = env.CheckCollision(robot, report=report)
+            
+            if not collision:
+                grasping_poses = generate_grasping_pose(robot, 
+                                                        object_to_grasp,
+                                                        use_general_grasps)                
+                sol = check_reachable(manip, grasping_poses)
+                isreachable = sol is not None                
+            else:
+                continue
+
+    if (sol is None) or collision:
+        e = GraspingPoseError("No collision free grasping pose found within %d steps" % max_trials)    
+        raise e
+    else:
+        return (sol, torso_angle)
+
 def move_random_torso(robot, min_angle, max_angle, joint_index=[]):
     if joint_index == []:
         joint_index.append(robot.GetJointIndex('torso_lift_joint'))
@@ -215,12 +285,57 @@ def move_random_torso(robot, min_angle, max_angle, joint_index=[]):
     robot.SetDOFValues([angle],  joint_index)
     return angle
 
+def get_torso_surface_pose(robot, obj, 
+                                         max_trials = 100,
+                                         use_general_grasps = True):
+    
+    env = robot.GetEnv()
+    robot_pose = robot.GetTransform()
+    torso_angle = robot.GetJoint("torso_lift_joint").GetValues()[0]
+    manip = robot.GetActiveManipulator()
+    
+    ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
+            robot,iktype=openravepy.IkParameterization.Type.Transform6D)
+    if not ikmodel.load():
+        ikmodel.autogenerate()    
+
+    grasping_poses = generate_manip_above_surface(obj)
+    env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
+    
+    collision = env.CheckCollision(robot)
+    sol = check_reachable(manip, grasping_poses)
+    isreachable = sol is not None
+    
+    min_torso, max_torso = utils.get_pr2_torso_limit(robot)
+    
+    num_trial = 0
+    with robot:
+        while ((collision) or (not isreachable)) and (num_trial < max_trials):
+            num_trial +=1
+            torso_angle = move_random_torso(robot, min_torso, max_torso)
+            
+            report = openravepy.CollisionReport()
+            collision = env.CheckCollision(robot, report=report)
+            
+            if not collision:
+                grasping_poses = generate_manip_above_surface(obj)
+                sol = check_reachable(manip, grasping_poses)
+                isreachable = sol is not None
+            else:
+                continue
+
+    if (sol is None) or collision:
+        raise GraspingPoseError("No collision free grasping pose found within %d steps" % max_trials)    
+    else:
+        return (sol, torso_angle)
+
 def get_collision_free_surface_pose(robot, obj, 
                                          max_trials = 100,
                                          use_general_grasps = True):
     
     env = robot.GetEnv()
     robot_pose = robot.GetTransform()
+    torso_angle = robot.GetJoint("torso_lift_joint").GetValues()[0]
     manip = robot.GetActiveManipulator()
     
     ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
@@ -256,7 +371,7 @@ def get_collision_free_surface_pose(robot, obj,
                 continue
 
     if (sol is None) or collision:
-        raise ValueError("No collision free grasping pose found within %d steps" % max_trials)    
+        raise GraspingPoseError("No collision free grasping pose found within %d steps" % max_trials)    
     else:
         return (robot_pose, sol, torso_angle)
 
@@ -278,7 +393,7 @@ def main():
     #env.GetKinBody('obstacle').SetVisible(False)
     
     try:
-        pose, sol = get_collision_free_grasping_pose(robot,
+        pose, sol, torso= get_collision_free_grasping_pose(robot,
                                                      obj,
                                                      1000)
         robot.SetTransform(pose)
