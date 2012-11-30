@@ -1,0 +1,14 @@
+0: MOVETO ROBOTINITLOC GP_random_object29
+1: GRASP random_object29 LOC29 GP_random_object29
+
+#Using GP_random_object27 could be a problem here, a collision free pose might
+#still be unavailable. It should work though as the blocking object has been
+#grasped
+2: MOVETO GP_random_object29 GP_random_object27
+
+3: MOVETO P24 BLF_Table6
+4: PUTDOWN random_object29 Table6 BLF_Table6
+5: MOVETO BLF_Table6 GP_random_object27
+6: GRASP random_object27 LOC27 GP_random_object27
+7: MOVETO GP_random_object27 BLF_Table6
+8: PUTDOWN random_object27 Table6 BLF_Table6
