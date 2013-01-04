@@ -38,7 +38,11 @@ def get_occluding_objects(robot,
                              max_trials = 100,
                              ):
     """Generates a list of all the objects that prevent the robot from reaching
-    a target object.
+    a target object. Several (up to max_trials) attempts are performed to grasp
+
+    Parameters:
+    robot: a openravepy.Robot instance
+    object_to_grasp: a openravepy.KinBody instance representing the object to grasp    
     
     Returns:
     a list of sets of objects
