@@ -2,7 +2,22 @@ import openravepy
 import utils
 import inspect
 import generate_reaching_poses
+import reachability
 import time
+
+class ExecutingException(Exception):
+    """This is a general exception that returns information on failure for an execution step.
+    """
+    def __init__(self, problem, line_number = None):
+        self.line_number = line_number
+        self.problem = problem
+        self.robot = None
+        self.object_to_grasp = None
+        self.collision_list = None
+        self.pddl_error_info = ""
+    
+    def __repr__(self):
+        return "ExecutingException, line %d, problem %s" % (self.line_number, self.problem)
 
 class Executor(object):
     def __init__(self, robot):
@@ -20,6 +35,7 @@ class Executor(object):
             self.robot.SetTransform(pose)
     
     def grasp(self, obj_name, _unused1, _unused2):
+        #!TODO remember the grasping poses so to re-use them later!
         print "Grasping object ", obj_name
         obj = self.env.GetKinBody(obj_name)
         if obj is None:
@@ -30,8 +46,11 @@ class Executor(object):
                                                                               self.robot, 
                                                                               obj,
                                                                               )
-        except generate_reaching_poses.GraspingPoseError():
-            raise
+        except generate_reaching_poses.GraspingPoseError:
+            e = ExecutingException("Object in collision")
+            e.robot = self.robot
+            e.object_to_grasp = obj
+            raise e
         
         self.robot.SetDOFValues([torso_angle],
                                 [self.robot.GetJointIndex('torso_lift_joint')])
@@ -54,8 +73,8 @@ class Executor(object):
                                                                                       self.robot, 
                                                                                       table,
                                                                                       )
-        except generate_reaching_poses.GraspingPoseError():
-            raise
+        except generate_reaching_poses.GraspingPoseError:
+            raise ExecutingException("Putdown in collision")
                 
         self.robot.SetDOFValues([torso_angle],
                                 [self.robot.GetJointIndex('torso_lift_joint')])
@@ -123,7 +142,7 @@ class PlanParser(object):
             method = getattr(self.executor, function_name, None)
             if method is None:
                 raise TypeError("Object %s does not have a method called %s" %(
-                    self.executor.__class__.__name,
+                    self.executor.__class__.__name__,
                     function_name))
             
             function['name'] = function_name
@@ -147,7 +166,7 @@ class PlanParser(object):
                     self.base_locations.add(arg)
                     self.need_binding.add(arg)
                 
-                function['args'].append(arg)
+                function['args'].append(arg.lower())
             
             functions.append(function)
         self.parsing_result = functions
@@ -187,29 +206,67 @@ class PlanParser(object):
     
     def execute(self, timestep = 0.5):
         print "Starting..."
-        time.sleep(timestep)
+        #time.sleep(timestep)
         
-        for instruction in self.parsing_result:            
+        for lineno, instruction in enumerate(self.parsing_result):
             action_name =  instruction["name"] + "(" + ", ".join( instruction['args']) + ")"
             print "Executing action ", action_name
             
             method = instruction['method']
             
             args = [self.bind_variable(a) for a in instruction['args']]
-            
-            method(*args)
+        
+            try:
+                method(*args)
+            except ExecutingException, e:
+                e.line_number = lineno
+                self.handle_error(e)
+                raise e
+                
             time.sleep(timestep)
+            #raw_input("Press a button to continue")
             
         print "Done"
+        
+    def handle_error(self, error):
+        assert isinstance(error, ExecutingException)
+        robot = error.robot
+        obj = error.object_to_grasp
+        
+        print "Handling an error"
+        if "collision" in error.problem:
+            print "Got a collision error, findind occlusions"
+            collision_list = reachability.get_occluding_objects_names(robot,
+                                                         obj,
+                                                         lambda b:b.GetName().startswith("random"),
+                                                         100)
+            if len(collision_list) == 0:
+                raise ExecutingException("No way I can grasp that object!", error.line_number)
+            first_collisions = collision_list.pop()
+            object_to_grasp_name = error.object_to_grasp.GetName()
+            obst_list = "\n".join("(Obstructs %s %s %s)" %("gp_"+ object_to_grasp_name,
+                                                           obstr, object_to_grasp_name) for obstr in first_collisions)
+            error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number, obst_list)
+            return
+        else:
+            print "Don't know how to handle this problem!"
+            
         
 def test():
     env = openravepy.Environment()
     env.SetViewer('qtcoin')
     env.Load('/home/pezzotto/Projects/OpenRaving/boxes.dae');
-    robot = env.GetRobots()[0]; manip = robot.SetActiveManipulator('rightarm')
+    robot = env.GetRobots()[0];
+    manip = robot.SetActiveManipulator('rightarm')
     ex = Executor(robot); 
-    parser = PlanParser("plan.txt", ex);
-    parser.execute(2)
+    parser = PlanParser("/home/pezzotto/Dropbox/hybrid_planning/solution.txt", ex);
+    
+    try:
+        parser.execute(1)
+        print "All ok"
+    except ExecutingException, e:
+        print "Got an execution problem: ", e
+        print "PDDL message is: ", e.pddl_error_info
     
 if __name__ == "__main__":
     test()
