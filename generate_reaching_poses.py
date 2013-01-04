@@ -325,7 +325,7 @@ def get_torso_surface_pose(robot, obj,
                 continue
 
     if (sol is None) or collision:
-        raise GraspingPoseError("No collision free grasping pose found within %d steps" % max_trials)    
+        raise GraspingPoseError("No collision free putdown pose found within %d steps" % max_trials)    
     else:
         return (sol, torso_angle)
 
