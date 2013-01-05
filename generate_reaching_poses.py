@@ -395,7 +395,7 @@ def main():
     try:
         pose, sol, torso= get_collision_free_grasping_pose(robot,
                                                      obj,
-                                                     1000)
+                                                     100)
         robot.SetTransform(pose)
         robot.SetDOFValues(sol, manip.GetArmIndices())        
         openravepy.raveLogInfo("Done!!")        
