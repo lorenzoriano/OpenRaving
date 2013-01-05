@@ -24,6 +24,7 @@ class Executor(object):
         self.robot = robot
         utils.pr2_tuck_arm(robot)
         self.env = robot.GetEnv ()
+        self.grasping_locations_cache = {}
     
     def moveto(self, _unused1, pose):
         if type(pose) is str:
@@ -41,17 +42,26 @@ class Executor(object):
         if obj is None:
             raise ValueError("Object %s does not exist" % obj_name)
         
-        try:
-            sol, torso_angle = generate_reaching_poses.get_torso_grasping_pose(
-                                                                              self.robot, 
-                                                                              obj,
-                                                                              )
-        except generate_reaching_poses.GraspingPoseError:
-            e = ExecutingException("Object in collision")
-            e.robot = self.robot
-            e.object_to_grasp = obj
-            raise e
+        cached_value = self.grasping_locations_cache.get(obj_name, None)
+        if cached_value is None:
+            print "Object %s is not cached, looking for a value" % obj_name
+            try:
+                pose, sol, torso_angle = generate_reaching_poses.get_collision_free_grasping_pose(
+                                                                                  self.robot, 
+                                                                                  obj,
+                                                                                  max_trials=500
+                                                                                  )
+                self.grasping_locations_cache[obj_name] =  pose, sol, torso_angle
+            except generate_reaching_poses.GraspingPoseError:
+                e = ExecutingException("Object in collision")
+                e.robot = self.robot
+                e.object_to_grasp = obj
+                raise e
+        else:
+            print "Object %s already cached"
+            pose, sol, torso_angle = cached_value
         
+        self.robot.SetTransform(pose)
         self.robot.SetDOFValues([torso_angle],
                                 [self.robot.GetJointIndex('torso_lift_joint')])
         self.robot.SetDOFValues(sol,
@@ -69,13 +79,14 @@ class Executor(object):
             raise ValueError("Object %s does not exist" % obj_name)        
         
         try:
-            sol, torso_angle = generate_reaching_poses.get_torso_surface_pose(
+            pose, sol, torso_angle = generate_reaching_poses.get_collision_free_surface_pose(
                                                                                       self.robot, 
                                                                                       table,
                                                                                       )
         except generate_reaching_poses.GraspingPoseError:
-            raise ExecutingException("Putdown in collision")
+            raise ExecutingException("Putdown has problems!")
                 
+        self.robot.SetTransform(pose)
         self.robot.SetDOFValues([torso_angle],
                                 [self.robot.GetJointIndex('torso_lift_joint')])
         self.robot.SetDOFValues(sol,
@@ -105,9 +116,6 @@ class Executor(object):
                                                                                                        )
         return robot_pose        
 
-class Uninterpreted(object):
-    pass
-
 class PlanParser(object):
     def __init__(self, file_object_or_name, executor):
         if type(file_object_or_name) is str:
@@ -128,15 +136,16 @@ class PlanParser(object):
     
     def parse(self, file_obj):        
         functions = []
-        for l in file_obj:
+        for l in file_obj:            
             function = {}
+            stripped_line =  l.strip(" \t\n")
             
-            if l.startswith('#'):
+            if stripped_line.startswith('#'):
                 continue
-            if len(l) < 2:
+            if len(stripped_line) < 2:
                 continue
             
-            tokens_list = l.split(" ")[1:] #skip instruction number
+            tokens_list = stripped_line.split(" ")[1:] #skip instruction number
             function_name = tokens_list[0].lower()
             
             method = getattr(self.executor, function_name, None)
@@ -157,12 +166,13 @@ class PlanParser(object):
             args = (t.strip("\n")
                     for t in tokens_list[1:] if len(t) > 0)
             for arg in args:
-                #grasping location
-                if arg.startswith("GP_"):
-                    self.grasping_locations.add(arg)
-                    self.need_binding.add(arg)
+                #grasping location ignored!
+                if arg.startswith("gp_"):
+                    pass
+                    #self.grasping_locations.add(arg)
+                    #self.need_binding.add(arg)
                 #base location
-                elif arg.startswith("BLF_"):
+                elif arg.startswith("blf_"):
                     self.base_locations.add(arg)
                     self.need_binding.add(arg)
                 
@@ -235,7 +245,7 @@ class PlanParser(object):
         
         print "Handling an error"
         if "collision" in error.problem:
-            print "Got a collision error, findind occlusions"
+            print "Got a collision error, finding occlusions"
             collision_list = reachability.get_occluding_objects_names(robot,
                                                          obj,
                                                          lambda b:b.GetName().startswith("random"),
@@ -259,7 +269,7 @@ def test():
     robot = env.GetRobots()[0];
     manip = robot.SetActiveManipulator('rightarm')
     ex = Executor(robot); 
-    parser = PlanParser("/home/pezzotto/Dropbox/hybrid_planning/solution.txt", ex);
+    parser = PlanParser("/home/pezzotto/Dropbox/hybrid_planning/solution3.txt", ex);
     
     try:
         parser.execute(1)
