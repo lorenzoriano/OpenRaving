@@ -96,7 +96,7 @@ class Executor(object):
         
     def find_gp(self, object_to_grasp) :
         """"Find a grasping pose
-        """""
+        """"" 
         
         print "Getting a collision free grasping pose"
         robot_pose, _, _= generate_reaching_poses.get_collision_free_grasping_pose(
@@ -262,22 +262,28 @@ class PlanParser(object):
             print "Don't know how to handle this problem!"
             
         
-def test():
+def test(planFName):
     env = openravepy.Environment()
-    env.SetViewer('qtcoin')
-    env.Load('/home/pezzotto/Projects/OpenRaving/boxes.dae');
+    #env.SetViewer('qtcoin')
+    env.Load('boxes.dae');
     robot = env.GetRobots()[0];
     manip = robot.SetActiveManipulator('rightarm')
     ex = Executor(robot); 
-    parser = PlanParser("/home/pezzotto/Dropbox/hybrid_planning/solution3.txt", ex);
+    parser = PlanParser(planFName, ex);
     
     try:
         parser.execute(1)
         print "All ok"
     except ExecutingException, e:
-        print "Got an execution problem: ", e
-        print "PDDL message is: ", e.pddl_error_info
+        raise 
+    
+    
     
 if __name__ == "__main__":
-    test()
+    try:
+        test("wrongplan.txt")
+    except ExecutingException, e:
+        print "Got an execution problem: ", e
+        print "PDDL message is: ", e.pddl_error_info
+        
     raw_input("Press a button to continue")
