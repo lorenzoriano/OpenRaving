@@ -29,8 +29,8 @@ pip-log.txt
 *.o
 *.wpr
 *.wpu
-ff
-lex.fct_pddl.c
-lex.ops_pddl.c
-scan-fct_pddl.tab.c
-scan-ops_pddl.tab.c
+*.tab.c
+*.pddl.out
+robotics_autogen_prob*
+planners/FF-v2.3/ff
+*pddl.c
