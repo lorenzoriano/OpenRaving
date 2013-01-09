@@ -25,3 +25,12 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+*.o
+*.wpr
+*.wpu
+ff
+lex.fct_pddl.c
+lex.ops_pddl.c
+scan-fct_pddl.tab.c
+scan-ops_pddl.tab.c
