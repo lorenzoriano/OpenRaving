@@ -1,7 +1,7 @@
-path = "/Users/Sid/work/Planners/myDomains/"
+path = "../domains/"
 errFileName = "robotics_autogen_err1.txt"
 
-ff = "~/work/planners/FF-v2.3/ff"
+ff = "../planners/FF-v2.3/ff"
 pddlDomainFile = path+ raw_input("Enter PDDL domain file name: ")
 if pddlDomainFile == path:
     pddlDomainFile = path+ "robotics_obstrn_compiled_dom2.pddl"
