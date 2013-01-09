@@ -25,3 +25,12 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+*.o
+*.wpr
+*.wpu
+*.tab.c
+*.pddl.out
+robotics_autogen_prob*
+planners/FF-v2.3/ff
+*pddl.c
