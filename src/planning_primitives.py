@@ -268,10 +268,11 @@ def initOpenRave(viewer = False):
     env.Load('boxes.dae');
     robot = env.GetRobots()[0];
     manip = robot.SetActiveManipulator('rightarm')
-    ex = Executor(robot); 
+    ex = Executor(robot)
+    return ex
         
 
-def test(planFName):
+def test(planFName, ex):
     parser = PlanParser(planFName, ex);
     
     try:

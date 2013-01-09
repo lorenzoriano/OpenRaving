@@ -95,7 +95,7 @@ def iterativePlanIndependent():
 
 def iterativePlanAuto(pddlDomainFile, pddlProblemFile):
     iteration = 0
-    planning_primitives.init(viewer=False)
+    ex = planning_primitives.init(viewer=False)
     while True:
         iteration += 1
         ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile
@@ -111,7 +111,7 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile):
         time.sleep(2)
         
         try:
-            planning_primitives.test(planFile)
+            planning_primitives.test(planFile, ex)
             print "Execution seems to have succeeded. Quitting."
             sys.exit(0)
         except planning_primitives.ExecutingException, e:
