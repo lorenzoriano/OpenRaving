@@ -1,0 +1,2 @@
+LineNumber: 1
+(Obstructs gp_random_object34 random_object30 random_object34) 
