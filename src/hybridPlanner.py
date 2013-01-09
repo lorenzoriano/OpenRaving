@@ -95,6 +95,7 @@ def iterativePlanIndependent():
 
 def iterativePlanAuto(pddlDomainFile, pddlProblemFile):
     iteration = 0
+    planning_primitives.init(viewer=False)
     while True:
         iteration += 1
         ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile

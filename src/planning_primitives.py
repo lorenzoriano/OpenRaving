@@ -261,14 +261,17 @@ class PlanParser(object):
         else:
             print "Don't know how to handle this problem!"
             
-        
-def test(planFName):
+def initOpenRave(viewer = False):
     env = openravepy.Environment()
-    #env.SetViewer('qtcoin')
+    if viewer: 
+        env.SetViewer('qtcoin')
     env.Load('boxes.dae');
     robot = env.GetRobots()[0];
     manip = robot.SetActiveManipulator('rightarm')
     ex = Executor(robot); 
+        
+
+def test(planFName):
     parser = PlanParser(planFName, ex);
     
     try:
@@ -280,6 +283,7 @@ def test(planFName):
     
     
 if __name__ == "__main__":
+    initOpenRave()
     try:
         test("wrongplan.txt")
     except ExecutingException, e:
