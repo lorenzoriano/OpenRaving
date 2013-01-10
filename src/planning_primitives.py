@@ -62,10 +62,13 @@ class Executor(object):
             pose, sol, torso_angle = cached_value
         
         self.robot.SetTransform(pose)
+        raw_input("Press a key...")
         self.robot.SetDOFValues([torso_angle],
                                 [self.robot.GetJointIndex('torso_lift_joint')])
+        raw_input("Press a key...")
         self.robot.SetDOFValues(sol,
                                 self.robot.GetActiveManipulator().GetArmIndices())
+        raw_input("Press a key...")
         self.robot.Grab(obj)
         utils.pr2_tuck_arm(self.robot)
     
@@ -249,7 +252,8 @@ class PlanParser(object):
             collision_list = reachability.get_occluding_objects_names(robot,
                                                          obj,
                                                          lambda b:b.GetName().startswith("random"),
-                                                         100)
+                                                         100,
+                                                         just_one_attempt=True)
             if len(collision_list) == 0:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)
             first_collisions = collision_list.pop()

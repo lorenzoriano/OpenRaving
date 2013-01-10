@@ -6,19 +6,21 @@ import time
 def get_occluding_objects_names(robot, 
                                 obj,
                                 body_filter,
-                                num_trials = 300):
+                                num_trials = 300,
+                                just_one_attempt = False):
     """
     Returns the names of all the objects as calculated by get_occluding_objects
     with additional filtering.
     
     Paramters:
     body_filter: a function that takes a KinBody and returns True or False.
+    just_one_attempt: If True then it will return only the result of one successfull grasping attempt.
     
     Example usage:
     get_occluding_objects_names(robot, obj, lambda b:b.GetName().startswith("random"), 500)
     """
     
-    obstacles_bodies = get_occluding_objects(robot, obj, num_trials)
+    obstacles_bodies = get_occluding_objects(robot, obj, num_trials, just_one_attempt)
     openravepy.raveLogInfo("Bodies: %s" % obstacles_bodies)  
     nonempty = lambda l:len(l)>0
     obstacles = set( filter(nonempty,
@@ -36,6 +38,7 @@ def get_occluding_objects_names(robot,
 def get_occluding_objects(robot, 
                              object_to_grasp, 
                              max_trials = 100,
+                              just_one_attempt = False
                              ):
     """Generates a list of all the objects that prevent the robot from reaching
     a target object. Several (up to max_trials) attempts are performed to grasp
@@ -88,7 +91,9 @@ def get_occluding_objects(robot,
                     openravepy.raveLogInfo("Getting the list of collisions")
                     with robot:
                         robot.SetDOFValues(sol, robot.GetActiveManipulator().GetArmIndices());                    
-                        collisions_list.append(utils.get_all_collisions(robot, env))                
+                        collisions_list.append(utils.get_all_collisions(robot, env))
+                        if just_one_attempt:
+                            return collisions_list
 
     return collisions_list
 
