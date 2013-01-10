@@ -65,6 +65,8 @@ def get_occluding_objects(robot,
     with robot:
         while num_trial < max_trials:
             num_trial +=1
+
+            # sample a base pose
             torso_angle = generate_reaching_poses.move_random_torso(robot, 
                                                                     min_torso, 
                                                                     max_torso)
@@ -77,15 +79,20 @@ def get_occluding_objects(robot,
             collision = env.CheckCollision(robot, report=report)
             
             if not collision:                
-                openravepy.raveLogInfo("Got a position not in collision")                
+                openravepy.raveLogInfo("Got a position not in collision")
+                
+                #sample a gripper pose
                 grasping_poses = generate_reaching_poses.generate_grasping_pose(robot,
                                                         object_to_grasp,
                                                         use_general_grasps = True,
                                                         checkik=False) 
                 openravepy.raveLogInfo("Got %d grasping poses" % len(grasping_poses))
+                #check if gripper pose is reachable from base pose
                 sol = generate_reaching_poses.check_reachable(manip, 
                                                            grasping_poses, 
-                                                           only_reachable = True) 
+                                                              only_reachable = True)
+                if sol is None:
+                    print "No sol from base pose to gripper pose"
                 
                 if sol is not None:                  
                     openravepy.raveLogInfo("Getting the list of collisions")
@@ -94,6 +101,9 @@ def get_occluding_objects(robot,
                         collisions_list.append(utils.get_all_collisions(robot, env))
                         if just_one_attempt:
                             return collisions_list
+        if num_trial == max_trial:
+            print '''No gripper pose reachable from collision
+            free base pose found'''
 
     return collisions_list
 

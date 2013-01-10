@@ -252,7 +252,7 @@ class PlanParser(object):
             collision_list = reachability.get_occluding_objects_names(robot,
                                                          obj,
                                                          lambda b:b.GetName().startswith("random"),
-                                                         100,
+                                                         200,
                                                          just_one_attempt=True)
             if len(collision_list) == 0:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)
