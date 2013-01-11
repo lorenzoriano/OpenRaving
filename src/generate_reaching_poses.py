@@ -3,6 +3,7 @@ import openravepy
 import time
 import numpy as np
 
+import reachability
 import utils
 
 class GraspingPoseError(Exception):
@@ -402,9 +403,43 @@ def main():
     except ValueError, e:
         openravepy.raveLogError("Error while trying to find a pose: %s" % e)
         return
+
+def generate_all_obstructions():
+    """Loads an environment and generates, for each object, the list of obstructions
+    ot reach it (if they exist).
+    """
+    
+    env = openravepy.Environment()    
+    env.Load('boxes.dae')
+    #env.SetViewer('qtcoin')
+    robot=env.GetRobots()[0]
+    utils.pr2_tuck_arm(robot)
+    manip = robot.SetActiveManipulator('rightarm')
+    objects = [b
+               for b in env.GetBodies()
+               if b.GetName().startswith("random_")]
+    
+    for obj in objects:        
+        #trying to grasp
+        print "Testing object ", obj
+        try:
+            get_collision_free_grasping_pose(
+                robot, 
+                obj,
+                max_trials=500
+                )
+            print "Object ", obj, "is graspable"
+        except GraspingPoseError:
+            print "Object ", obj, "is NOT graspable, getting occlusions"
+            reachability.get_occluding_objects_names(robot,
+                                        obj,
+                                        lambda b:b.GetName().startswith("random"),
+                                        100,
+                                        just_one_attempt=True)
+    
         
 if __name__ == "__main__":
-    main()
+    generate_all_obstructions()
     raw_input("Press a button to continue")
 
     
