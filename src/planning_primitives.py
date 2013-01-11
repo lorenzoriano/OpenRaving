@@ -36,7 +36,6 @@ class Executor(object):
             self.robot.SetTransform(pose)
     
     def grasp(self, obj_name, _unused1, _unused2):
-        #!TODO remember the grasping poses so to re-use them later!
         print "Grasping object ", obj_name
         obj = self.env.GetKinBody(obj_name)
         if obj is None:
