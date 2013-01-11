@@ -440,7 +440,7 @@ def generate_all_obstructions():
         
 if __name__ == "__main__":
     generate_all_obstructions()
-    raw_input("Press a button to continue")
+    #raw_input("Press a button to continue")
 
     
     
