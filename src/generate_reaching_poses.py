@@ -437,13 +437,13 @@ def generate_all_obstructions():
                                         obj,
                                         lambda b:b.GetName().startswith("random"),
                                         100,
-                                        just_one_attempt=True)
+                                        just_one_attempt=False)
             for coll in collision_list:
                 for obstr in coll:
                     s =  "(Obstructs p%d %s %s)" %(position_index,
                                                            obstr, obj.GetName())
                     obstructions_text.append(s)
-            position_index += 1
+                position_index += 1
 
         print "\n\n\n"
         print "\n".join(obstructions_text)
