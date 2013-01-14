@@ -419,6 +419,7 @@ def generate_all_obstructions():
                for b in env.GetBodies()
                if b.GetName().startswith("random_")]
     
+    obstructions_text = []
     for obj in objects:        
         #trying to grasp
         print "Testing object ", obj
@@ -431,11 +432,20 @@ def generate_all_obstructions():
             print "Object ", obj, "is graspable"
         except GraspingPoseError:
             print "Object ", obj, "is NOT graspable, getting occlusions"
-            reachability.get_occluding_objects_names(robot,
+            collision_list = reachability.get_occluding_objects_names(robot,
                                         obj,
                                         lambda b:b.GetName().startswith("random"),
                                         100,
                                         just_one_attempt=True)
+            for coll in collision_list:
+                for obstr in coll:
+                    s =  "(Obstructs %s %s %s)" %("gp_"+ obj.GetName(),
+                                                           obstr, obj.GetName())
+                    obstructions_text.append(s)
+
+        print "\n\n\n"
+        print "\n".join(obstructions_text)
+        
     
         
 if __name__ == "__main__":
