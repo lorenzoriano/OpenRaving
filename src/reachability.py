@@ -104,8 +104,10 @@ def get_occluding_objects(robot,
                         if just_one_attempt:
                             return collisions_list
         if num_trial == max_trials:
-            print '''No gripper pose reachable from collision
-            free base pose found'''
+            print "No gripper pose reachable from collision free base pose found",
+            print "after {0} trials".format(num_trial)
+
+            
 
     return collisions_list
 
