@@ -88,6 +88,8 @@ def get_occluding_objects(robot,
                                                         checkik=False) 
                 openravepy.raveLogInfo("Got %d grasping poses" % len(grasping_poses))
                 #check if gripper pose is reachable from base pose
+                #use robot's base pose to transform precomputed
+                #gripper poses into the robot's frame of reference
                 sol = generate_reaching_poses.check_reachable(manip, 
                                                            grasping_poses, 
                                                               only_reachable = True)
