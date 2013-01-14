@@ -420,6 +420,7 @@ def generate_all_obstructions():
                if b.GetName().startswith("random_")]
     
     obstructions_text = []
+    position_index = 0
     for obj in objects:        
         #trying to grasp
         print "Testing object ", obj
@@ -439,9 +440,10 @@ def generate_all_obstructions():
                                         just_one_attempt=True)
             for coll in collision_list:
                 for obstr in coll:
-                    s =  "(Obstructs %s %s %s)" %("gp_"+ obj.GetName(),
+                    s =  "(Obstructs p%d %s %s)" %(position_index,
                                                            obstr, obj.GetName())
                     obstructions_text.append(s)
+            position_index += 1
 
         print "\n\n\n"
         print "\n".join(obstructions_text)
