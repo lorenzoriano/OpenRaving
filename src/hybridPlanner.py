@@ -2,6 +2,7 @@ from PDDLPatcher import *
 import sys, subprocess, time, os
 import planning_primitives
 from settings import *
+import getopt
 
 def execCmd(cmd,  successStr,  dumpFile, pollTime = 12):
     ''' A generic utility for executing a command. 
@@ -93,9 +94,9 @@ def iterativePlanIndependent():
         myPatcher.writeCurrentInitState(pddlProblemFile)
         
 
-def iterativePlanAuto(pddlDomainFile, pddlProblemFile):
+def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer):
     iteration = 0
-    ex = planning_primitives.initOpenRave(viewer=True)
+    ex = planning_primitives.initOpenRave(viewer)
     while True:
         iteration += 1
         ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile
@@ -117,9 +118,16 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile):
         except planning_primitives.ExecutingException, e:
             errorStr = e.pddl_error_info
     
+        if errorStr == "":
+            print "Error in simulation: try increasing number of samples."
+            sys.exit(-1)
+
         print "Got facts:"
         print errorStr
-        raw_input("Press return to continue.")
+        if viewer:
+            raw_input("Press return to continue")
+        else:
+            time.sleep(5)
     
         errorLines = errorStr.lower().split("\n")
     
@@ -137,12 +145,28 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile):
         pddlProblemFile = initialProblemFile.replace(".pddl", \
                                                          repr(iteration)+".pddl")
         myPatcher.writeCurrentInitState(pddlProblemFile)
-       
-if __name__ == "__main__":
-    myPatcher = PDDLPatcher(initialProblemFile)
-    myPatcher.printInitState()
 
+def main(argv):
     iteration = 0
     pddlProblemFile = initialProblemFile
-    iterativePlanAuto(pddlDomainFile, initialProblemFile) 
-  
+
+    try:
+        opts, args = getopt.getopt(argv[1:],"v")
+    except getopt.GetoptError:
+        print 'Use -v for viewer'
+        sys.exit(2)
+
+    viewer = False
+    for opt,arg in opts:
+        if opt == "-v":
+            print "Setting viewer mode to True"
+            viewer = True
+
+            
+    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer)
+
+
+if __name__ == "__main__":
+    myPatcher = PDDLPatcher(initialProblemFile)
+    #myPatcher.printInitState()
+    main(sys.argv)

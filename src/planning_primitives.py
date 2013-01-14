@@ -20,11 +20,12 @@ class ExecutingException(Exception):
         return "ExecutingException, line %d, problem %s" % (self.line_number, self.problem)
 
 class Executor(object):
-    def __init__(self, robot):
+    def __init__(self, robot, viewer):
         self.robot = robot
         utils.pr2_tuck_arm(robot)
         self.env = robot.GetEnv ()
         self.grasping_locations_cache = {}
+        self.viewMode = viewer
     
     def moveto(self, _unused1, pose):
         if type(pose) is str:
@@ -61,13 +62,16 @@ class Executor(object):
             pose, sol, torso_angle = cached_value
         
         self.robot.SetTransform(pose)
-        raw_input("Press a key...")
+        if self.viewMode:
+            raw_input("Press return to continue")
         self.robot.SetDOFValues([torso_angle],
                                 [self.robot.GetJointIndex('torso_lift_joint')])
-        raw_input("Press a key...")
+        if self.viewMode:
+            raw_input("Press return to continue")
         self.robot.SetDOFValues(sol,
                                 self.robot.GetActiveManipulator().GetArmIndices())
-        raw_input("Press a key...")
+        if self.viewMode:
+            raw_input("Press return to continue")
         self.robot.Grab(obj)
         utils.pr2_tuck_arm(self.robot)
     
@@ -271,7 +275,7 @@ def initOpenRave(viewer = False):
     env.Load('boxes.dae');
     robot = env.GetRobots()[0];
     manip = robot.SetActiveManipulator('rightarm')
-    ex = Executor(robot)
+    ex = Executor(robot, viewer)
     return ex
         
 
