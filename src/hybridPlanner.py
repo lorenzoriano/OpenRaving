@@ -33,8 +33,8 @@ def execCmd(cmd,  successStr,  dumpFile, pollTime = 12):
  
         
     dumpF.close()
-    time.sleep(2)
-    pdb.set_trace()
+    time.sleep(5)
+#    pdb.set_trace()
     dumpF = open(dumpFile, "r")
     msg = dumpF.read()
 
