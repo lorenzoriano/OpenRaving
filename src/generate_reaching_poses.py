@@ -443,7 +443,7 @@ def generate_all_obstructions():
                     s =  "(Obstructs p%d %s %s)" %(position_index,
                                                            obstr, obj.GetName())
                     obstructions_text.append(s)
-            position_index += 1
+                position_index += 1
 
         print "\n\n\n"
         print "\n".join(obstructions_text)
