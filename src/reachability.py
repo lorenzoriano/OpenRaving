@@ -21,7 +21,13 @@ def get_occluding_objects_names(robot,
     get_occluding_objects_names(robot, obj, lambda b:b.GetName().startswith("random"), 500)
     """
     
-    obstacles_bodies = get_occluding_objects(robot, obj, num_trials, just_one_attempt,
+    if return_pose:
+        (pose,
+         sol, torso_angle,         
+         obstacles_bodies) = get_occluding_objects(robot, obj, num_trials, just_one_attempt,
+                                             return_pose)
+    else:
+        obstacles_bodies =  get_occluding_objects(robot, obj, num_trials, just_one_attempt,
                                              return_pose)
     openravepy.raveLogInfo("Bodies: %s" % obstacles_bodies)  
     nonempty = lambda l:len(l)>0
@@ -35,7 +41,10 @@ def get_occluding_objects_names(robot,
                             )
                             )
                      )
-    return obstacles
+    if return_pose:
+        return pose, sol, torso_angle, obstacles_bodies
+    else:
+        return obstacles
     
 def get_occluding_objects(robot, 
                              object_to_grasp, 
