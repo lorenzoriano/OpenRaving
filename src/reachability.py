@@ -94,9 +94,12 @@ def get_occluding_objects(robot,
                                                            grasping_poses, 
                                                               only_reachable = True)
                 if sol is None:
-                    print "No sol from base pose to gripper pose"
+                    print "Trial {0} No sol from base pose to gripper pose".\
+                        format(num_trial)
                 
                 if sol is not None:                  
+                    print "Sol from base pose to gripper pose found in trial {0}".\
+                        format(num_trial)
                     openravepy.raveLogInfo("Getting the list of collisions")
                     with robot:
                         robot.SetDOFValues(sol, robot.GetActiveManipulator().GetArmIndices());                    
