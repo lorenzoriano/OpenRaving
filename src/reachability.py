@@ -42,7 +42,7 @@ def get_occluding_objects_names(robot,
                             )
                      )
     if return_pose:
-        return pose, sol, torso_angle, obstacles_bodies
+        return pose, sol, torso_angle, obstacles
     else:
         return obstacles
     

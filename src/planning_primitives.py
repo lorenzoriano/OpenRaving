@@ -58,7 +58,7 @@ class Executor(object):
                 e.object_to_grasp = obj
                 raise e
         else:
-            print "Object %s already cached"
+            print "Object %s already cached" %  obj_name
             pose, sol, torso_angle = cached_value
         
         self.robot.SetTransform(pose)
@@ -254,7 +254,7 @@ class PlanParser(object):
             print "Got a collision error, finding occlusions"
             (pose,
              sol, torso_angle,
-             collisions_list) = reachability.get_occluding_objects_names(robot,
+             collision_list) = reachability.get_occluding_objects_names(robot,
                                                          obj,
                                                          lambda b:b.GetName().startswith("random"),
                                                          200,
