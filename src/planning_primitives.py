@@ -252,13 +252,21 @@ class PlanParser(object):
         print "Handling an error"
         if "collision" in error.problem:
             print "Got a collision error, finding occlusions"
-            collision_list = reachability.get_occluding_objects_names(robot,
+            (pose,
+             sol, torso_angle,
+             collisions_list) = reachability.get_occluding_objects_names(robot,
                                                          obj,
                                                          lambda b:b.GetName().startswith("random"),
                                                          200,
-                                                         just_one_attempt=True)
+                                                         just_one_attempt=True,
+                                                         return_pose=True)
+            
             if len(collision_list) == 0:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)
+            
+            #updating the executor cache
+            self.executor.grasping_locations_cache[obj.GetName()] =  pose, sol, torso_angle
+            
             first_collisions = collision_list.pop()
             object_to_grasp_name = error.object_to_grasp.GetName()
             obst_list = "\n".join("(Obstructs %s %s %s)" %("gp_"+ object_to_grasp_name,

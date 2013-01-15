@@ -7,7 +7,8 @@ def get_occluding_objects_names(robot,
                                 obj,
                                 body_filter,
                                 num_trials = 300,
-                                just_one_attempt = False):
+                                just_one_attempt = False,
+                                return_pose = False):
     """
     Returns the names of all the objects as calculated by get_occluding_objects
     with additional filtering.
@@ -20,7 +21,8 @@ def get_occluding_objects_names(robot,
     get_occluding_objects_names(robot, obj, lambda b:b.GetName().startswith("random"), 500)
     """
     
-    obstacles_bodies = get_occluding_objects(robot, obj, num_trials, just_one_attempt)
+    obstacles_bodies = get_occluding_objects(robot, obj, num_trials, just_one_attempt,
+                                             return_pose)
     openravepy.raveLogInfo("Bodies: %s" % obstacles_bodies)  
     nonempty = lambda l:len(l)>0
     obstacles = set( filter(nonempty,
@@ -38,7 +40,8 @@ def get_occluding_objects_names(robot,
 def get_occluding_objects(robot, 
                              object_to_grasp, 
                              max_trials = 100,
-                              just_one_attempt = False
+                              just_one_attempt = False,
+                              return_pose = False
                              ):
     """Generates a list of all the objects that prevent the robot from reaching
     a target object. Several (up to max_trials) attempts are performed to grasp
@@ -50,6 +53,9 @@ def get_occluding_objects(robot,
     Returns:
     a list of sets of objects
     """
+    if just_one_attempt != return_pose:
+        raise ValueError("If asking for a return poes then set just_one_attempt to True")
+    
     env = robot.GetEnv()
     robot_pose = robot.GetTransform()
     manip = robot.GetActiveManipulator()
@@ -102,11 +108,13 @@ def get_occluding_objects(robot,
                         robot.SetDOFValues(sol, robot.GetActiveManipulator().GetArmIndices());                    
                         collisions_list.append(utils.get_all_collisions(robot, env))
                         if just_one_attempt:
-                            return collisions_list
+                            if return_pose:
+                                return (robot_pose, sol, torso_angle, collisions_list)
+                            else:
+                                return collisions_list
         if num_trial == max_trials:
             print "No gripper pose reachable from collision free base pose found",
             print "after {0} trials".format(num_trial)
-
             
 
     return collisions_list
