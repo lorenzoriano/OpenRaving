@@ -113,13 +113,13 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer):
         
         try:
             planning_primitives.test(planFile, ex)
-            print "Execution seems to have succeeded. Quitting."
+            print "Success. Quitting."
             sys.exit(0)
         except planning_primitives.ExecutingException, e:
             errorStr = e.pddl_error_info
     
         if errorStr == "":
-            print "Error in simulation: try increasing number of samples."
+            print "Failure: Error in simulation. Try increasing number of samples."
             sys.exit(-1)
 
         print "Got facts:"
