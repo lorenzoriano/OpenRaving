@@ -3,17 +3,22 @@ import sys, subprocess, time, os
 import planning_primitives
 from settings import *
 import getopt
+import StringIO
+totalExecTime = 0
 
-def execCmd(cmd,  successStr,  dumpFile, pollTime = 12):
+def execCmd(cmd,  successStr,  dumpFile, pollTime = 2):
     ''' A generic utility for executing a command. 
     Dumpfile stores stdout and stderr'''
-
+    initTime = time.time()
     print "Executing %s...   " %(cmd), 
     sys.stdout.flush()
     ## Using subprocess.call so that all the messages from the planner
     ## can be captured and parsed for the string "Solution found!"
-    dumpF = open(dumpFile,  "w")
-    p = subprocess.Popen([cmd], shell = True, stdout=dumpF, stderr=dumpF)
+
+    #dumpF = open(dumpFile,  "w")
+    #p = subprocess.Popen([cmd], shell = True, stdout=dumpF, stderr=dumpF)
+    p = subprocess.Popen([cmd], shell = True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
     startTime = time.time()
     
     while p.poll == None:
@@ -30,69 +35,30 @@ def execCmd(cmd,  successStr,  dumpFile, pollTime = 12):
                 os.kill(p.pid+1,  9)
                 return execCmd(cmd, successStr, dumpFile)
             else:
-                print "Unrecognized response. Continuing." 
- 
-        
-    dumpF.close()
-    time.sleep(5)
-#    pdb.set_trace()
-    dumpF = open(dumpFile, "r")
-    msg = dumpF.read()
+                print "Unrecognized response. Continuing."
+
+    #dumpF.close()
+    #time.sleep(5)
+    endTime = time.time()
+
+    #dumpF = open(dumpFile, "r")
+    #msg = dumpF.read()
+    out, err = p.communicate()
+    msg = out+err
+    
+    print "\nPlanning time: {0}".format(endTime-initTime)
+    global totalExecTime
+    totalExecTime +=  endTime-initTime
 
     if successStr in msg:
         print "Success!"
         print
-        return 0
+        return msg
     else:
         print "Failure... check %s for messages"%dumpFile
         print
         return -1
 
-
-
-
-
-
-
-
-    
-def iterativePlanIndependent():
-    while True:
-        iteration += 1
-        ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile
-        ffOutputFile = pddlProblemFile+ ".out"
-    
-        execCmd(ffCmdLine, "found legal plan",  ffOutputFile)
-        
-        ffOutStr = OutputParser(ffOutputFile).getFFPlan()
-        print "Computed plan: \n" + ffOutStr
-    
-        errFileName = raw_input("Enter error file name: ")
-        if errFileName == "-1":
-            sys.exit(0)
-        if errFileName == "-2":
-            pdb.set_trace()
-    
-        execErrF = tryOpen(path+errFileName, "r")
-        errorStr = execErrF.read()
-    
-        errorLines = errorStr.lower().split("\n")
-    
-        failedActionNumber = int(errorLines[0].strip("linenumber: "))
-        propList = filter( lambda x: len(x)>0, errorLines[1:])
-    
-        ## If action i failed, need state just after action i-1
-        ## kth element of state list from ffoutputfile is 
-        ## the state before application of action k.
-        myPatcher.patchWithFFOutput(ffOutputFile, failedActionNumber)
-        myPatcher.patchWithProps(propList)
-        print "State to re-pan from:"
-        myPatcher.printInitState()
-    
-        pddlProblemFile = initialProblemFile.replace(".pddl", \
-                                                         repr(iteration)+".pddl")
-        myPatcher.writeCurrentInitState(pddlProblemFile)
-        
 
 def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer):
     iteration = 0
@@ -101,19 +67,26 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer):
         iteration += 1
         ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile
         ffOutputFile = pddlProblemFile+ ".out"
-    
-        if execCmd(ffCmdLine, "found legal plan",  ffOutputFile) < 0:
+
+        retVal = execCmd(ffCmdLine, "found legal plan",  ffOutputFile)
+        if retVal ==-1:
                 sys.exit(-1)
         
+        tryIO(ffOutputFile, "write", retVal)
         ffOutStr = OutputParser(ffOutputFile).getFFPlan()
+
         print "Computed plan: \n" + ffOutStr
-        planFile = pddlProblemFile+".plan"
-        tryIO(planFile, "write", ffOutStr)
-        time.sleep(2)
-        
+        #planFile = pddlProblemFile+".plan"
+        #tryIO(planFile, "write", ffOutStr)
+        #time.sleep(2)
+        strPlanFile = StringIO.StringIO()
+        strPlanFile.write(ffOutStr)
+        strPlanFile.seek(0)
+    
         try:
-            planning_primitives.test(planFile, ex)
+            planning_primitives.test(strPlanFile, ex)
             print "Success. Quitting."
+            print "Total planning time: {0}".format(totalExecTime)
             sys.exit(0)
         except planning_primitives.ExecutingException, e:
             errorStr = e.pddl_error_info
@@ -126,8 +99,8 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer):
         print errorStr
         if viewer:
             raw_input("Press return to continue")
-        else:
-            time.sleep(5)
+#        else:
+#            time.sleep(5)
     
         errorLines = errorStr.lower().split("\n")
     
