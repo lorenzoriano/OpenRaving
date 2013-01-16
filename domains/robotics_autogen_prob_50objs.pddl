@@ -275,4 +275,7 @@ robotInitLoc
 )
 
 
+(:goal (and (At random_object42 Table6)))
+)
+
 
