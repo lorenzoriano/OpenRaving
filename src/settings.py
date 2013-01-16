@@ -11,4 +11,5 @@ if initialProblemFile == path:
 
 
 collision_free_grasping_samples = 500
-occluding_objects_grasping_samples = 100
+occluding_objects_grasping_samples = 200
+envFile = "boxes.dae"

@@ -4,6 +4,7 @@ import inspect
 import generate_reaching_poses
 import reachability
 import time
+from settings import *
 
 class ExecutingException(Exception):
     """This is a general exception that returns information on failure for an execution step.
@@ -280,7 +281,8 @@ def initOpenRave(viewer = False):
     env = openravepy.Environment()
     if viewer: 
         env.SetViewer('qtcoin')
-    env.Load('boxes.dae');
+    global envFile
+    env.Load(envFile);
     robot = env.GetRobots()[0];
     manip = robot.SetActiveManipulator('rightarm')
     ex = Executor(robot, viewer)
