@@ -8,3 +8,7 @@ if pddlDomainFile == path:
 initialProblemFile = path #+ raw_input("Enter PDDL problem file name: ")
 if initialProblemFile == path:
     initialProblemFile = path + "robotics_autogen_prob.pddl"
+
+
+collision_free_grasping_samples = 500
+occluding_objects_grasping_samples = 100
