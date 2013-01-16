@@ -5,6 +5,7 @@ import numpy as np
 
 import reachability
 import utils
+import sys
 
 class GraspingPoseError(Exception):
     pass
@@ -404,13 +405,20 @@ def main():
         openravepy.raveLogError("Error while trying to find a pose: %s" % e)
         return
 
-def generate_all_obstructions():
+def generate_all_obstructions(env = None):
     """Loads an environment and generates, for each object, the list of obstructions
-    ot reach it (if they exist).
+    to reach it (if they exist).
     """
+    import settings
     
-    env = openravepy.Environment()    
-    env.Load('boxes.dae')
+    if env is None:
+        env = openravepy.Environment()    
+        env.Load('boxes.dae')
+    elif type(env) is str:
+        filename = env
+        env = openravepy.Environment()    
+        env.Load(filename)
+        
     #env.SetViewer('qtcoin')
     robot=env.GetRobots()[0]
     utils.pr2_tuck_arm(robot)
@@ -428,7 +436,7 @@ def generate_all_obstructions():
             get_collision_free_grasping_pose(
                 robot, 
                 obj,
-                max_trials=500
+                max_trials=settings.collision_free_grasping_samples
                 )
             print "Object ", obj, "is graspable"
         except GraspingPoseError:
@@ -436,7 +444,7 @@ def generate_all_obstructions():
             collision_list = reachability.get_occluding_objects_names(robot,
                                         obj,
                                         lambda b:b.GetName().startswith("random"),
-                                        100,
+                                        settings.occluding_objects_grasping_samples,
                                         just_one_attempt=False)
             for coll in collision_list:
                 for obstr in coll:
@@ -451,7 +459,11 @@ def generate_all_obstructions():
     
         
 if __name__ == "__main__":
-    generate_all_obstructions()
+    env_filename = None
+    if len(sys.argv) == 2:
+        env_filename = sys.argv[1]
+    
+    generate_all_obstructions(env_filename)
     #raw_input("Press a button to continue")
 
     
