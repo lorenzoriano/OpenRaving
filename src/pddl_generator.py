@@ -29,7 +29,7 @@ class PDDLWorld(object):
         self.obj_locations = ["loc_" + o for o in self.objects]
         self.gp_locations = ["gp_" + o for o in self.objects]
         
-        self.table = "Table6"  #TODO: this is fixed!!
+        self.table = "table6"  #TODO: this is fixed!!
         
         
     def write_header(self):

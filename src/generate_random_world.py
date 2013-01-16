@@ -6,7 +6,7 @@ import sys
 import openravepy
 
 def generate_n_objects(env, num_objects, dims = (0.1, 0.1, 0.3)):
-    tables = ["Table1", "Table2", "Table3", "Table4"]
+    tables = ["table1", "table2", "table3", "table4"]
     
     created = 0
     for obj_num in range(num_objects):
