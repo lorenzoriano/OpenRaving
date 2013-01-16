@@ -49,7 +49,7 @@ class Executor(object):
                 pose, sol, torso_angle = generate_reaching_poses.get_collision_free_grasping_pose(
                                                                                   self.robot, 
                                                                                   obj,
-                                                                                  max_trials=500
+                                                                                  max_trials=collision_free_grasping_samples
                                                                                   )
                 self.grasping_locations_cache[obj_name] =  pose, sol, torso_angle
             except generate_reaching_poses.GraspingPoseError:
@@ -257,7 +257,7 @@ class PlanParser(object):
              collision_list) = reachability.get_occluding_objects_names(robot,
                                                          obj,
                                                          lambda b:b.GetName().startswith("random"),
-                                                         200,
+                                                         occluding_objects_grasping_samples,
                                                          just_one_attempt=True,
                                                          return_pose=True)
             
