@@ -3,7 +3,9 @@ import openravepy
 import time
 import numpy as np
 
+import reachability
 import utils
+import sys
 
 class GraspingPoseError(Exception):
     pass
@@ -210,6 +212,75 @@ def get_collision_free_grasping_pose(robot,
     else:
         return (robot_pose, sol, torso_angle)
 
+def get_collision_free_ik_pose(robot,
+                                     object_to_grasp,
+                                     ik_pose, 
+                                     max_trials = 100,                                     
+                                     ):
+    """Returns the position from where the robot can reach a position (in
+    cartesian coordinates). The active manipulator is used.
+    
+    Parameters:
+    robot: an OpenRave robot instance
+    object_to_grasp: a KinBody that the robot should grasp
+    max_trials: how many attempts before giving up
+    use_general_grasps: f True, don't calculate actual grasp points, but use
+     a pre-generated list. It is much faster if a grasping model has not been
+     generated.
+     
+    Returns:
+    (robot_pose, sol, torso_angle): the robot position (as a transformation matrix),
+    the active manipulator angles and the torso joint angle from where the robot
+    can grasp an object.
+    
+    Raises GraspingPoseError if no valid solution is found.
+    """
+    
+    env = robot.GetEnv()
+    robot_pose = robot.GetTransform()
+    torso_angle = robot.GetJoint("torso_lift_joint").GetValues()[0]
+    manip = robot.GetActiveManipulator()
+    
+    try:
+        iter(ik_pose)
+    except TypeError:
+        ik_pose = [ik_pose]
+    
+    ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
+            robot,iktype=openravepy.IkParameterization.Type.Transform6D)
+    if not ikmodel.load():
+        ikmodel.autogenerate()
+    
+    env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
+    
+    collision = env.CheckCollision(robot)
+    sol = check_reachable(manip, ik_pose)
+    isreachable = sol is not None
+    min_torso, max_torso = utils.get_pr2_torso_limit(robot)
+    
+    num_trial = 0
+    with robot:
+        while ((collision) or (not isreachable)) and (num_trial < max_trials):
+            num_trial +=1
+            torso_angle = move_random_torso(robot, min_torso, max_torso)
+            robot_pose = generate_random_pos(robot, object_to_grasp)
+            
+            robot.SetTransform(robot_pose) 
+            report = openravepy.CollisionReport()
+            collision = env.CheckCollision(robot, report=report)
+            
+            if not collision:
+                sol = check_reachable(manip, ik_pose)
+                isreachable = sol is not None                
+            else:
+                continue
+
+    if (sol is None) or collision:
+        e = GraspingPoseError("No collision free grasping pose found within %d steps" % max_trials)    
+        raise e
+    else:
+        return (robot_pose, sol, torso_angle)
+
 def get_torso_grasping_pose(robot,
                                      object_to_grasp, 
                                      max_trials = 100,
@@ -402,10 +473,67 @@ def main():
     except ValueError, e:
         openravepy.raveLogError("Error while trying to find a pose: %s" % e)
         return
+
+def generate_all_obstructions(env = None):
+    """Loads an environment and generates, for each object, the list of obstructions
+    to reach it (if they exist).
+    """
+    import settings
+    
+    if env is None:
+        env = openravepy.Environment()    
+        env.Load('boxes.dae')
+    elif type(env) is str:
+        filename = env
+        env = openravepy.Environment()    
+        env.Load(filename)
+        
+    #env.SetViewer('qtcoin')
+    robot=env.GetRobots()[0]
+    utils.pr2_tuck_arm(robot)
+    manip = robot.SetActiveManipulator('rightarm')
+    objects = [b
+               for b in env.GetBodies()
+               if b.GetName().startswith("random_")]
+    
+    obstructions_text = []
+    position_index = 0
+    for obj in objects:        
+        #trying to grasp
+        print "Testing object ", obj
+        try:
+            get_collision_free_grasping_pose(
+                robot, 
+                obj,
+                max_trials=settings.collision_free_grasping_samples
+                )
+            print "Object ", obj, "is graspable"
+        except GraspingPoseError:
+            print "Object ", obj, "is NOT graspable, getting occlusions"
+            collision_list = reachability.get_occluding_objects_names(robot,
+                                        obj,
+                                        lambda b:b.GetName().startswith("random"),
+                                        settings.occluding_objects_grasping_samples,
+                                        just_one_attempt=False)
+            for coll in collision_list:
+                for obstr in coll:
+                    s =  "(Obstructs p%d %s %s)" %(position_index,
+                                                           obstr, obj.GetName())
+                    obstructions_text.append(s)
+                position_index += 1
+
+        print "\n\n\n"
+        print "\n".join(obstructions_text)
+        
+    
         
 if __name__ == "__main__":
-    main()
-    raw_input("Press a button to continue")
+    env_filename = None
+    if len(sys.argv) == 2:
+        env_filename = sys.argv[1]
+    
+    generate_all_obstructions(env_filename)
+    #raw_input("Press a button to continue")
 
     
     

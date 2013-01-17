@@ -4,6 +4,7 @@ import inspect
 import generate_reaching_poses
 import reachability
 import time
+from settings import *
 
 class ExecutingException(Exception):
     """This is a general exception that returns information on failure for an execution step.
@@ -20,11 +21,12 @@ class ExecutingException(Exception):
         return "ExecutingException, line %d, problem %s" % (self.line_number, self.problem)
 
 class Executor(object):
-    def __init__(self, robot):
+    def __init__(self, robot, viewer):
         self.robot = robot
         utils.pr2_tuck_arm(robot)
         self.env = robot.GetEnv ()
         self.grasping_locations_cache = {}
+        self.viewMode = viewer
     
     def moveto(self, _unused1, pose):
         if type(pose) is str:
@@ -36,7 +38,6 @@ class Executor(object):
             self.robot.SetTransform(pose)
     
     def grasp(self, obj_name, _unused1, _unused2):
-        #!TODO remember the grasping poses so to re-use them later!
         print "Grasping object ", obj_name
         obj = self.env.GetKinBody(obj_name)
         if obj is None:
@@ -49,7 +50,7 @@ class Executor(object):
                 pose, sol, torso_angle = generate_reaching_poses.get_collision_free_grasping_pose(
                                                                                   self.robot, 
                                                                                   obj,
-                                                                                  max_trials=500
+                                                                                  max_trials=collision_free_grasping_samples
                                                                                   )
                 self.grasping_locations_cache[obj_name] =  pose, sol, torso_angle
             except generate_reaching_poses.GraspingPoseError:
@@ -58,17 +59,20 @@ class Executor(object):
                 e.object_to_grasp = obj
                 raise e
         else:
-            print "Object %s already cached"
+            print "Object %s already cached" %  obj_name
             pose, sol, torso_angle = cached_value
         
         self.robot.SetTransform(pose)
-        raw_input("Press a key...")
+        if self.viewMode:
+            raw_input("Press return to continue")
         self.robot.SetDOFValues([torso_angle],
                                 [self.robot.GetJointIndex('torso_lift_joint')])
-        raw_input("Press a key...")
+        if self.viewMode:
+            raw_input("Press return to continue")
         self.robot.SetDOFValues(sol,
                                 self.robot.GetActiveManipulator().GetArmIndices())
-        raw_input("Press a key...")
+        if self.viewMode:
+            raw_input("Press return to continue")
         self.robot.Grab(obj)
         utils.pr2_tuck_arm(self.robot)
     
@@ -249,13 +253,21 @@ class PlanParser(object):
         print "Handling an error"
         if "collision" in error.problem:
             print "Got a collision error, finding occlusions"
-            collision_list = reachability.get_occluding_objects_names(robot,
+            (pose,
+             sol, torso_angle,
+             collision_list) = reachability.get_occluding_objects_names(robot,
                                                          obj,
                                                          lambda b:b.GetName().startswith("random"),
-                                                         200,
-                                                         just_one_attempt=True)
+                                                         occluding_objects_grasping_samples,
+                                                         just_one_attempt=True,
+                                                         return_pose=True)
+            
             if len(collision_list) == 0:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)
+            
+            #updating the executor cache
+            self.executor.grasping_locations_cache[obj.GetName()] =  pose, sol, torso_angle
+            
             first_collisions = collision_list.pop()
             object_to_grasp_name = error.object_to_grasp.GetName()
             obst_list = "\n".join("(Obstructs %s %s %s)" %("gp_"+ object_to_grasp_name,
@@ -269,10 +281,11 @@ def initOpenRave(viewer = False):
     env = openravepy.Environment()
     if viewer: 
         env.SetViewer('qtcoin')
-    env.Load('boxes.dae');
+    global envFile
+    env.Load(envFile);
     robot = env.GetRobots()[0];
     manip = robot.SetActiveManipulator('rightarm')
-    ex = Executor(robot)
+    ex = Executor(robot, viewer)
     return ex
         
 

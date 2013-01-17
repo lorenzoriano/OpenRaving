@@ -1,4 +1,7 @@
+#! /usr/bin/python
+
 import openravepy
+import sys
 
 class PDDLWorld(object):
     """A convenient representation for a PDDL description of a problem domain.
@@ -26,7 +29,7 @@ class PDDLWorld(object):
         self.obj_locations = ["loc_" + o for o in self.objects]
         self.gp_locations = ["gp_" + o for o in self.objects]
         
-        self.table = "Table6"  #TODO: this is fixed!!
+        self.table = "table6"  #TODO: this is fixed!!
         
         
     def write_header(self):
@@ -91,3 +94,21 @@ class PDDLWorld(object):
                     self.write_init()
         )
         return all_str
+    
+    
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print "Usage: %s name_of_worldfile"
+        sys.exit(1)
+    
+    worldfile = sys.argv[1]
+    env = openravepy.Environment()
+    env.Load(worldfile)
+    
+    pddl = PDDLWorld()
+    pddl.load_environment(env)
+    res = pddl.write_pddl()
+    print res
+    
+    
+        
