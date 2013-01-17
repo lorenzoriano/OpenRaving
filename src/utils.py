@@ -307,4 +307,3 @@ def get_all_collisions(obj, env):
             collisions.add(report.plink2.GetParent())
     
     return collisions
-
