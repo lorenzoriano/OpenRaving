@@ -17,9 +17,10 @@ def execCmd(cmd,  successStr,  dumpFile, pollTime = 2):
 
     #dumpF = open(dumpFile,  "w")
     #p = subprocess.Popen([cmd], shell = True, stdout=dumpF, stderr=dumpF)
+    startTime = time.time()
     p = subprocess.Popen([cmd], shell = True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
-    startTime = time.time()
+
     
     while p.poll == None:
         time.sleep(pollTime)
