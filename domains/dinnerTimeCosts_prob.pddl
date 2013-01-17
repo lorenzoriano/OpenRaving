@@ -92,7 +92,7 @@
 
 (:goal (and (OnTray random_object1) (OnTray random_object2) 
        (At tray1 trayLoc2) ))
-
+(:metric minimize (total-cost) )
 )
 
 

@@ -1,5 +1,5 @@
 (define (domain robotics)
-  (:requirements :strips :equality)
+  (:requirements :strips :equality :action-costs :typing)
   (:constants door blf_trayLoc2)
   (:predicates
 	   (Location ?loc)
@@ -19,6 +19,7 @@
 	   (On ?obj1 ?obj2)
   )
 
+  (:functions (total-cost) - number)
 
  (:action placeOnTray
    :parameters(?lrobot ?obj1 ?obj2 ?tray ?trayloc)
@@ -75,7 +76,8 @@
      :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
      		   	(or (not (= ?l2 blf_trayLoc2) ) (= ?l1 door)  )
      		   	)
-     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2))
+     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2)
+     	     (increase (total-cost) 1))
   )
 
 
