@@ -17,6 +17,7 @@
 	   (Heavy ?tray)
 	   (Bigger ?obj1 ?obj2)
 	   (On ?obj1 ?obj2)
+	   (TempArea ?loc)
   )
 
 
@@ -64,7 +65,7 @@
  (:action putDown
   :parameters(?o1 ?l1 ?l2)
   :precondition (and (Object ?o1) (Location ?l1) (Location ?l2) 
-  		     (InGripper ?o1) (RobotAt  ?l2) 
+  		     (InGripper ?o1) (RobotAt  ?l2) (TempArea ?l1)
 		     (IsAccessPointFor ?l2 ?l1))
   :effect (and (not (InGripper ?o1)) (At ?o1 ?l1) )
  )

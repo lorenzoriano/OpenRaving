@@ -22,6 +22,10 @@
 	;blf_trayLoc2	
 	None
 	
+	table6
+	
+	blf_table6
+
 	robotInitLoc
 )
 
@@ -45,7 +49,8 @@
 (Location loc_random_object32)
 (Location trayLoc1)
 (Location trayLoc2)
-
+(Location table6)
+(TempArea table6)
 
 (Location gp_random_object11)
 (Location gp_random_object21)
@@ -61,6 +66,7 @@
 (Location robotInitLoc)
 (Location blf_trayLoc1)
 (Location blf_trayLoc2)
+(Location blf_table6)
 (Location door)
 
 (At random_object11 loc_random_object11)
@@ -76,6 +82,7 @@
 (IsAccessPointFor blf_targettable targettable)
 (IsAccessPointFor blf_trayLoc1 trayLoc1)
 (IsAccessPointFor blf_trayLoc2 trayLoc2)
+(IsAccessPointFor blf_table6 table6)
 
 
 (IsAccessPointForTray blf_tray tray)
