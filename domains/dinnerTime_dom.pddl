@@ -11,7 +11,7 @@
 	   (IsGP ?loc ?obj)
 	   (Object ?obj)
 	   (OnTray ?obj)
-	   (Tray ?tray)
+	   (IsTray ?tray)
 	   (IsAccessPointForTray ?loc ?tray)
 	   (Topmost ?obj ?tray)
 	   (Heavy ?tray)
@@ -23,7 +23,7 @@
  (:action placeOnTray
    :parameters(?lrobot ?obj1 ?obj2 ?tray ?trayloc)
    :precondition(and (Location ?lrobot) (Object ?obj1) (Object ?obj2)
-   		     (RobotAt ?lrobot) (Tray ?tray) 
+   		     (RobotAt ?lrobot) (IsTray ?tray) 
 		     (At ?tray ?trayloc)
    		     (IsAccessPointFor ?lrobot ?trayloc) (InGripper ?obj1) 
 		     (Topmost ?obj2 ?tray) (not (Bigger ?obj1 ?obj2)))
@@ -43,7 +43,7 @@
 
  (:action pickFromTray
   :parameters(?lrobot ?tray ?obj ?trayloc)
-  :precondition(and (Location ?lrobot) (Tray ?tray) (Object ?obj)
+  :precondition(and (Location ?lrobot) (IsTray ?tray) (Object ?obj)
   		  (RobotAt ?lrobot) (IsAccessPointFor ?lrobot ?trayloc)
 		  (At ?tray ?trayloc)
 		  (Topmost ?obj ?tray)
@@ -54,7 +54,7 @@
 
  (:action putDownTray
   :parameters(?lrobot ?tray ?ltarget)
-  :precondition (and (Tray ?tray) (Location ?lrobot)
+  :precondition (and (IsTray ?tray) (Location ?lrobot)
   		     (InGripper ?tray) 
 		     (RobotAt ?lrobot) (IsAccessPointFor ?lrobot ?ltarget))
   :effect (and (not (InGripper ?tray)) (At ?tray ?ltarget))

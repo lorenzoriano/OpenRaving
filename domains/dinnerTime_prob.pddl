@@ -11,11 +11,11 @@
 	gp_random_object22 gp_random_object31 gp_random_object32  
 
 	targettable sourcetable
-	tray1 
+	tray 
 	trayLoc1 
 	trayLoc2	
 	
-	blf_tray1
+	blf_tray
 	blf_targettable
 	blf_sourcetable	
 	blf_trayLoc1 
@@ -33,9 +33,9 @@
 (Object random_object22)
 (Object random_object31)
 (Object random_object32)
-(Object tray1)
+(Object tray)
 (Object None)
-(Tray tray1)
+(IsTray tray)
 
 (Location loc_random_object11)
 (Location loc_random_object21)
@@ -69,7 +69,7 @@
 (At random_object22 loc_random_object22)
 (At random_object31 loc_random_object31)
 (At random_object32 loc_random_object32)
-(At tray1 trayLoc1)
+(At tray trayLoc1)
 (RobotAt robotInitLoc)
 
 (IsAccessPointFor blf_sourcetable sourcetable)
@@ -78,7 +78,7 @@
 (IsAccessPointFor blf_trayLoc2 trayLoc2)
 
 
-(IsAccessPointForTray blf_tray1 tray1)
+(IsAccessPointForTray blf_tray tray)
 
 (IsGP gp_random_object11 random_object11)
 (IsGP gp_random_object21 random_object21)
@@ -87,10 +87,10 @@
 (IsGP gp_random_object31 random_object31)
 (IsGP gp_random_object32 random_object32)
 
-(Topmost None tray1)
+(Topmost None tray)
 )
 
-(:goal (and (OnTray random_object12) (InGripper tray1))
+(:goal (and (OnTray random_object12) (InGripper tray))
 )
 )
 
