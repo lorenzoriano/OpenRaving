@@ -4,6 +4,8 @@ import inspect
 import generate_reaching_poses
 import reachability
 import time
+import tray_world
+import numpy as np
 from settings import *
 
 class ExecutingException(Exception):
@@ -16,17 +18,33 @@ class ExecutingException(Exception):
         self.object_to_grasp = None
         self.collision_list = None
         self.pddl_error_info = ""
-    
+        
     def __repr__(self):
         return "ExecutingException, line %d, problem %s" % (self.line_number, self.problem)
 
 class Executor(object):
-    def __init__(self, robot, viewer):
+    def __init__(self, robot, viewer = False):
         self.robot = robot
-        utils.pr2_tuck_arm(robot)
         self.env = robot.GetEnv ()
         self.grasping_locations_cache = {}
         self.viewMode = viewer
+        self.tray_stack = []
+        
+        utils.pr2_tuck_arm(robot)
+        robot.SetActiveManipulator('leftarm')
+        ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
+                        robot,iktype=openravepy.IkParameterization.Type.Transform6D)    
+        if not ikmodel.load():
+            ikmodel.autogenerate()            
+        robot.SetActiveManipulator('rightarm')
+        ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
+            robot,iktype=openravepy.IkParameterization.Type.Transform6D)    
+        if not ikmodel.load():
+            ikmodel.autogenerate()            
+
+    def pause(self):
+        if self.viewMode:
+            raw_input("Press return to continue")        
     
     def moveto(self, _unused1, pose):
         if type(pose) is str:
@@ -63,16 +81,13 @@ class Executor(object):
             pose, sol, torso_angle = cached_value
         
         self.robot.SetTransform(pose)
-        if self.viewMode:
-            raw_input("Press return to continue")
+        self.pause()
         self.robot.SetDOFValues([torso_angle],
                                 [self.robot.GetJointIndex('torso_lift_joint')])
-        if self.viewMode:
-            raw_input("Press return to continue")
+        self.pause()
         self.robot.SetDOFValues(sol,
                                 self.robot.GetActiveManipulator().GetArmIndices())
-        if self.viewMode:
-            raw_input("Press return to continue")
+        self.pause()
         self.robot.Grab(obj)
         utils.pr2_tuck_arm(self.robot)
     
@@ -94,12 +109,26 @@ class Executor(object):
             raise ExecutingException("Putdown has problems!")
                 
         self.robot.SetTransform(pose)
+        self.pause()
         self.robot.SetDOFValues([torso_angle],
                                 [self.robot.GetJointIndex('torso_lift_joint')])
         self.robot.SetDOFValues(sol,
                                 self.robot.GetActiveManipulator().GetArmIndices())
+        self.pause()
         self.robot.Release(obj)
-        utils.pr2_tuck_arm(self.robot)        
+        utils.pr2_tuck_arm(self.robot)
+        self.pause()
+        
+        #putting the object straight
+        T = obj.GetTransform()
+        rot_angle = (np.pi / 2., 0., 0) #got this from the model
+        rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
+        T[:3, :3] = rot_mat
+        _, _, _, _, z = utils.get_object_limits(table)
+        T[2, 3] = z
+        
+        obj.SetTransform(T)
+        self.pause()
         
     def find_gp(self, object_to_grasp) :
         """"Find a grasping pose
@@ -122,6 +151,99 @@ class Executor(object):
                                                                                                        surface, 
                                                                                                        )
         return robot_pose        
+
+    def placeontray(self, unused1, obj_name, unused2, tray_name, unused4):
+        """Put an item on the tray.
+        """
+        tray = self.env.GetKinBody(tray_name)
+        if tray is None:
+            raise ValueError("Object %s does not exist" % tray_name)        
+        obj =  self.env.GetKinBody(obj_name)
+        if obj is None:
+            raise ValueError("Object %s does not exist" % obj_name)
+                    
+        T = tray_world.tray_putdown_pose(tray, self.tray_stack)
+        try:
+            (pose,
+             sol,
+             torso_angle) = generate_reaching_poses.get_collision_free_ik_pose(
+                 self.robot,
+                 T,
+             )
+        except generate_reaching_poses.GraspingPoseError:
+            raise ExecutingException("Putting down on tray has problems!")
+        
+        print "Going to the tray"
+        self.robot.SetTransform(pose)
+        self.pause()
+        print "Arm/Torso in position"
+        self.robot.SetDOFValues([torso_angle],
+                                [self.robot.GetJointIndex('torso_lift_joint')])
+        self.robot.SetDOFValues(sol,
+                                self.robot.GetActiveManipulator().GetArmIndices())
+        self.pause()
+        print "Releasing object"
+        self.robot.Release(obj)
+        self.tray_stack.append(obj)
+        
+        #putting the object straight
+        rot_angle = (np.pi / 2., 0., 0) #got this from the model
+        rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
+        T[:3, :3] = rot_mat
+        T[2,3] -= 0.05        
+        obj.SetTransform(T)
+        
+        print "Back to rest"
+        utils.pr2_tuck_arm(self.robot)
+        self.pause()
+    
+    def picktray(self, unused1, tray_name, unused2):
+        """Grabs the tray and all the items on it
+        """
+        tray = self.env.GetKinBody(tray_name)
+        if tray is None:
+            raise ValueError("Object %s does not exist" % tray_name)
+        
+        if len(self.tray_stack) > 0 and (np.random.uniform() < 0.5):
+            e = ExecutingException("Tray is heavy!")
+            e.robot = self.robot
+            e.object_to_grasp = tray
+            raise e        
+        
+        print "Moving in front of the tray"
+        tray_world.move_robot_base_infront_tray(self.robot, tray)
+        self.pause()
+        print "Grasping the tray"
+        tray_world.put_left_arm_over_tray(self.robot, tray)
+        tray_world.put_right_arm_over_tray(self.robot, tray)
+        self.pause()
+        self.robot.Grab(tray)        
+        for obj in self.tray_stack:
+            self.robot.Grab(obj)
+    
+    def putdowntray(self, unused1, tray_name, tray_loc):
+        """Move the robot to the tray goal location and releases the tray        
+        """
+        tray = self.env.GetKinBody(tray_name)
+        if tray is None:
+            raise ValueError("Object %s does not exist" % tray_name)
+        
+        if tray_loc == "trayloc2":            
+            T = tray_world.tray_destination
+        else:
+            T = tray_world.tray_initial_loc
+        print "Moving to target position"
+        tray_world.move_robot_base_infront_tray(self.robot, T)
+        self.pause()
+        
+        print "Releasing the tray"
+        self.robot.Release(tray)
+        for obj in self.tray_stack:
+            self.robot.Release(obj)
+        self.tray_stack = []
+        utils.pr2_tuck_arm(self.robot)
+        self.pause()
+        
 
 class PlanParser(object):
     def __init__(self, file_object_or_name, executor):
@@ -273,6 +395,13 @@ class PlanParser(object):
             obst_list = "\n".join("(Obstructs %s %s %s)" %("gp_"+ object_to_grasp_name,
                                                            obstr, object_to_grasp_name) for obstr in first_collisions)
             error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number, obst_list)
+            return
+        
+        elif "heavy" in error.problem:
+            print "They tray is too heavy!"
+            msg = "(Heavy %s)" % error.object_to_grasp.GetName()
+            error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number,
+                                                          msg )
             return
         else:
             print "Don't know how to handle this problem!"
