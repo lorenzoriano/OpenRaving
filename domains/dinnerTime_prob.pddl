@@ -51,6 +51,9 @@
 (Location trayLoc2)
 (Location table6)
 (TempArea table6)
+(TrayLocation trayLoc1)
+(TrayLocation trayLoc2)
+
 
 (Location gp_random_object11)
 (Location gp_random_object21)
