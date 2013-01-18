@@ -1,5 +1,6 @@
 (define (domain robotics)
   (:requirements :strips :equality)
+  (:constants door blf_trayLoc2)
   (:predicates
 	   (Location ?loc)
 	   (At ?obj ?loc)
@@ -20,33 +21,45 @@
 
 
  (:action placeOnTray
-   :parameters(?lrobot ?obj1 ?obj2 ?tray)
+   :parameters(?lrobot ?obj1 ?obj2 ?tray ?trayloc)
    :precondition(and (Location ?lrobot) (Object ?obj1) (Object ?obj2)
    		     (RobotAt ?lrobot) (Tray ?tray) 
-   		     (IsAccessPointForTray ?lrobot ?tray) (InGripper ?obj1) 
+		     (At ?tray ?trayloc)
+   		     (IsAccessPointFor ?lrobot ?trayloc) (InGripper ?obj1) 
 		     (Topmost ?obj2 ?tray) (not (Bigger ?obj1 ?obj2)))
    :effect(and (not (InGripper ?obj1)) (OnTray ?obj1) (on ?obj1 ?obj2)
    	       (not (Topmost ?obj2 ?tray)) (Topmost ?obj1 ?tray) )
  )	      
 
  (:action pickTray
-  :parameters(?lrobot ?tray)
+  :parameters(?lrobot ?tray ?trayloc)
   :precondition(and (RobotAt ?lrobot) 
   		    (forall (?o) (imply (Object ?o) (not (InGripper ?o))))
-		    (IsAccessPointForTray ?lrobot ?tray)
+		    (IsAccessPointFor ?lrobot ?trayloc)
+		    (At ?tray ?trayloc)
 		    (not (Heavy ?tray)))
-  :effect(and (InGripper ?tray))
+  :effect(and (InGripper ?tray) (not (At ?tray ?trayloc)))
  )
 
  (:action pickFromTray
-  :parameters(?lrobot ?tray ?obj)
+  :parameters(?lrobot ?tray ?obj ?trayloc)
   :precondition(and (Location ?lrobot) (Tray ?tray) (Object ?obj)
-  		  (RobotAt ?lrobot) (IsAccessPointForTray ?lrobot ?tray)
+  		  (RobotAt ?lrobot) (IsAccessPointFor ?lrobot ?trayloc)
+		  (At ?tray ?trayloc)
 		  (Topmost ?obj ?tray)
 		  (forall (?o) (imply (Object ?o) (not (InGripper ?o))))
 		  )
   :effect(and (InGripper ?obj) (not (Heavy ?tray)))
 )
+
+ (:action putDownTray
+  :parameters(?lrobot ?tray ?ltarget)
+  :precondition (and (Tray ?tray) (Location ?lrobot)
+  		     (InGripper ?tray) 
+		     (RobotAt ?lrobot) (IsAccessPointFor ?lrobot ?ltarget))
+  :effect (and (not (InGripper ?tray)) (At ?tray ?ltarget))
+ )
+
 
  (:action putDown
   :parameters(?o1 ?l1 ?l2)
@@ -59,17 +72,12 @@
 
   (:action moveTo
      :parameters(?l1 ?l2)
-     :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1))
+     :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
+     		   	(or (not (= ?l2 blf_trayLoc2) ) (= ?l1 door)  )
+     		   	)
      :effect (and (not (RobotAt ?l1)) (RobotAt ?l2))
   )
 
- (:action putDownTray
-  :parameters(?lrobot ?tray ?ltarget)
-  :precondition (and (Tray ?tray) (Location ?lrobot)
-  		     (InGripper ?tray) 
-		     (RobotAt ?lrobot) (IsAccessPointFor ?lrobot ?ltarget))
-  :effect (and (not (InGripper ?tray)) (At ?tray ?ltarget) )
- )
 
 
  (:action grasp

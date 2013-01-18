@@ -12,12 +12,14 @@
 
 	targettable sourcetable
 	tray1 
-	trayLoc1 trayLoc2	
+	trayLoc1 
+	trayLoc2	
 	
 	blf_tray1
 	blf_targettable
 	blf_sourcetable	
-	blf_trayLoc1 blf_trayLoc2	
+	blf_trayLoc1 
+	;blf_trayLoc2	
 	None
 	
 	robotInitLoc
@@ -56,10 +58,10 @@
 (Location sourcetable)
 (Location blf_targettable)
 (Location blf_sourcetable)
-(Location blf_tray1)
 (Location robotInitLoc)
 (Location blf_trayLoc1)
 (Location blf_trayLoc2)
+(Location door)
 
 (At random_object loc_random_object)
 (At random_object0 loc_random_object0)
@@ -90,6 +92,7 @@
 
 (:goal (and (OnTray random_object1) (OnTray random_object2) 
        (At tray1 trayLoc2) ))
+
 )
 
 
