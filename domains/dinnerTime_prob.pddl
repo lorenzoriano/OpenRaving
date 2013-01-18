@@ -1,14 +1,14 @@
 (define (problem dinnerTime1) 
 (:domain robotics)
 (:objects
-	random_object random_object0 random_object1 random_object2
-	random_object3 random_object4   
+	random_object11 random_object12 random_object21
+	random_object22 random_object31   random_object32
 	
-	loc_random_object loc_random_object0 loc_random_object1
-	loc_random_object2 loc_random_object3 loc_random_object4 
+	loc_random_object11 loc_random_object21 loc_random_object12
+	loc_random_object22 loc_random_object31 loc_random_object32 
 
-	gp_random_object gp_random_object0 gp_random_object1
-	gp_random_object2 gp_random_object3 gp_random_object4  
+	gp_random_object11 gp_random_object21 gp_random_object12
+	gp_random_object22 gp_random_object31 gp_random_object32  
 
 	targettable sourcetable
 	tray1 
@@ -27,32 +27,32 @@
 
 (:init
 
-(Object random_object)
-(Object random_object0)
-(Object random_object1)
-(Object random_object2)
-(Object random_object3)
-(Object random_object4)
+(Object random_object11)
+(Object random_object21)
+(Object random_object12)
+(Object random_object22)
+(Object random_object31)
+(Object random_object32)
 (Object tray1)
 (Object None)
 (Tray tray1)
 
-(Location loc_random_object)
-(Location loc_random_object0)
-(Location loc_random_object1)
-(Location loc_random_object2)
-(Location loc_random_object3)
-(Location loc_random_object4)
+(Location loc_random_object11)
+(Location loc_random_object21)
+(Location loc_random_object12)
+(Location loc_random_object22)
+(Location loc_random_object31)
+(Location loc_random_object32)
 (Location trayLoc1)
 (Location trayLoc2)
 
 
-(Location gp_random_object)
-(Location gp_random_object0)
-(Location gp_random_object1)
-(Location gp_random_object2)
-(Location gp_random_object3)
-(Location gp_random_object4)
+(Location gp_random_object11)
+(Location gp_random_object21)
+(Location gp_random_object12)
+(Location gp_random_object22)
+(Location gp_random_object31)
+(Location gp_random_object32)
 
 (Location targettable)
 (Location sourcetable)
@@ -63,12 +63,12 @@
 (Location blf_trayLoc2)
 (Location door)
 
-(At random_object loc_random_object)
-(At random_object0 loc_random_object0)
-(At random_object1 loc_random_object1)
-(At random_object2 loc_random_object2)
-(At random_object3 loc_random_object3)
-(At random_object4 loc_random_object4)
+(At random_object11 loc_random_object11)
+(At random_object21 loc_random_object21)
+(At random_object12 loc_random_object12)
+(At random_object22 loc_random_object22)
+(At random_object31 loc_random_object31)
+(At random_object32 loc_random_object32)
 (At tray1 trayLoc1)
 (RobotAt robotInitLoc)
 
@@ -80,19 +80,17 @@
 
 (IsAccessPointForTray blf_tray1 tray1)
 
-(IsGP gp_random_object random_object)
-(IsGP gp_random_object0 random_object0)
-(IsGP gp_random_object1 random_object1)
-(IsGP gp_random_object2 random_object2)
-(IsGP gp_random_object3 random_object3)
-(IsGP gp_random_object4 random_object4)
+(IsGP gp_random_object11 random_object11)
+(IsGP gp_random_object21 random_object21)
+(IsGP gp_random_object12 random_object12)
+(IsGP gp_random_object22 random_object22)
+(IsGP gp_random_object31 random_object31)
+(IsGP gp_random_object32 random_object32)
 
 (Topmost None tray1)
 )
 
-(:goal (and (OnTray random_object1) (OnTray random_object2) 
-       (At tray1 trayLoc2) ))
-
+(:goal (and (OnTray random_object12) (InGripper tray1))
 )
-
+)
 
