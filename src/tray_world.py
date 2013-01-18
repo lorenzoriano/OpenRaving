@@ -3,6 +3,19 @@ import openravepy
 import generate_reaching_poses
 import utils
 
+def recognize_random_object(obj):
+    if type(obj) is not str:
+        obj = obj.GetName()
+    
+    if obj.startswith("random_object1"):
+        return "bowl"
+    elif obj.startswith("random_object2"):
+        return "mug"    
+    elif obj.startswith("random_object3"):
+        return "plate"
+    else:
+        raise ValueError("Unknown object type: "+obj)
+
 tray_destination =  np.array([[  1.00000000e+00,  -2.32949609e-15,  -2.56425998e-17,
          -2.61714161e+00],
        [ -2.56425998e-17,  -1.42108547e-14,  -1.00000000e+00,
