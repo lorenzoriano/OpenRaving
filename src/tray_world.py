@@ -22,9 +22,11 @@ def can_stack(stacktop, newobj):
     
     if stacktop == "mug":
         return False
-    if stacktop == "plate" :
+    elif stacktop == "plate" :
         return True
-    if stacktop == "bowl" and newobj == "plate":
+    elif stacktop == "bowl" and newobj == "plate":
+        return False
+    elif newobj == "plate":
         return False
     else:
         return True
