@@ -12,6 +12,15 @@ tray_destination =  np.array([[  1.00000000e+00,  -2.32949609e-15,  -2.56425998e
        [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
           1.00000000e+00]])
 
+tray_initial_loc = np.array([[  1.00000000e+00,  -3.15748247e-15,   3.94430453e-31,
+          3.47457995e+00],
+       [  1.38050658e-30,   2.22044605e-16,  -1.00000000e+00,
+         -9.65913272e-01],
+       [  3.15748247e-15,   1.00000000e+00,   2.22044605e-16,
+          7.44705319e-01],
+       [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+          1.00000000e+00]])
+
 def put_right_arm_over_tray(robot, tray):
     """Move the robot's right arm so that it's about to grasp the right edge
     of the tray. Raises a generate_reaching_poses.GraspingPoseError if no
@@ -38,7 +47,7 @@ def put_right_arm_over_tray(robot, tray):
     T[:3,:3] = rot_mat
     T[:3,3] = [x,y,z]
     
-    sol = generate_reaching_poses.check_reachable(manip, [T], True)
+    sol = generate_reaching_poses.check_reachable(manip, [T], False)
     if sol is not None:
         robot.SetDOFValues(sol, manip.GetArmIndices())
         #opening gripper
@@ -72,7 +81,7 @@ def put_left_arm_over_tray(robot, tray):
     T[:3,:3] = rot_mat
     T[:3,3] = [x,y,z]
     
-    sol = generate_reaching_poses.check_reachable(manip, [T], True)
+    sol = generate_reaching_poses.check_reachable(manip, [T], False)
     if sol is not None:
         robot.SetDOFValues(sol, manip.GetArmIndices())
         #opening gripper
@@ -86,7 +95,10 @@ def move_robot_base_infront_tray(robot, tray):
     """
     
     robotT = robot.GetTransform()
-    trayT = tray.GetTransform()
+    if type(tray) is openravepy.KinBody:
+        trayT = tray.GetTransform()
+    else:
+        trayT = tray
     
     robotT[:3, :3] = np.eye(3)
     #changing x
@@ -96,7 +108,7 @@ def move_robot_base_infront_tray(robot, tray):
     #z is unchanged
     robot.SetTransform(robotT)
     
-def tray_putdown_pose(tray):
+def tray_putdown_pose(tray, stack_of_items = None):
     """Returns a position right above the tray with the gripper pointing down.
     """
     T = tray.GetTransform()
@@ -106,7 +118,19 @@ def tray_putdown_pose(tray):
     T[:3,:3] = rot_mat
     
     #fixing the height
-    T[2,3] += 0.1
+    correction = 0.1
+    if stack_of_items is not None:
+        correction += get_stack_height(stack_of_items)
+    T[2,3] += correction
     
     return T
+
+def get_stack_height(list_of_objects):
+    """Return the height of a stack of objects
+    """
+    height = 0
+    for obj in list_of_objects:
+        ab = obj.ComputeAABB()
+        height += ab.extents()[2]
     
+    return height
