@@ -97,7 +97,7 @@
 (Topmost None tray)
 )
 
-(:goal (and (OnTray random_object12) (OnTray random_object22) (InGripper tray))
+(:goal (and (OnTray random_object22)(OnTray random_object12) (OnTray random_object32)(InGripper tray))
 )
 )
 
