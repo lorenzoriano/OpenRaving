@@ -31,7 +31,6 @@ class PDDLWorld(object):
         
         self.table = "table6"  #TODO: this is fixed!!
         
-        
     def write_header(self):
         """Returns the pddl header, right not fixed        
         """
