@@ -273,7 +273,7 @@ class Executor(object):
         utils.pr2_tuck_arm(self.robot)
         self.pause()
     
-    def pickfromtray(self, unused1, tray_name, obj_name, unused2):
+    def pickfromtray(self, unused1, tray_name, obj_name, unused2, unused3):
         tray = self.env.GetKinBody(tray_name)
         if tray is None:
             raise ValueError("Object %s does not exist" % tray_name)
