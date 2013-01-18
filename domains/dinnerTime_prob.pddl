@@ -37,7 +37,6 @@
 (Object random_object22)
 (Object random_object31)
 (Object random_object32)
-(Object tray)
 (Object None)
 (IsTray tray)
 
