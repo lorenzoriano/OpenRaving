@@ -16,6 +16,20 @@ def recognize_random_object(obj):
     else:
         raise ValueError("Unknown object type: "+obj)
 
+def can_stack(stacktop, newobj):
+    stacktop = recognize_random_object(stacktop)
+    newobj = recognize_random_object(newobj)
+    
+    if stacktop == "mug":
+        return False
+    if stacktop == "plate" :
+        return True
+    if stacktop == "bowl" and newobj == "plate":
+        return False
+    else:
+        return True
+        
+
 tray_destination =  np.array([[  1.00000000e+00,  -2.32949609e-15,  -2.56425998e-17,
          -2.61714161e+00],
        [ -2.56425998e-17,  -1.42108547e-14,  -1.00000000e+00,

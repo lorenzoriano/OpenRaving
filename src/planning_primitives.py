@@ -128,6 +128,11 @@ class Executor(object):
         T[2, 3] = z
         
         obj.SetTransform(T)
+        try:
+            del self.grasping_locations_cache[obj_name]
+        except KeyError:
+            print "funny, object ", obj_name, " was not in cache.. something wrong here!"
+            raw_input("Press return to continue")    
         self.pause()
         
     def find_gp(self, object_to_grasp) :
@@ -161,7 +166,15 @@ class Executor(object):
         obj =  self.env.GetKinBody(obj_name)
         if obj is None:
             raise ValueError("Object %s does not exist" % obj_name)
-                    
+
+        if (not len(self.tray_stack) == 0 and
+            not tray_world.can_stack(self.tray_stack[-1], obj)):
+            e = ExecutingException("Incompatible objects")
+            e.robot = self.robot
+            e.object_to_grasp = obj
+            e.stacktop = self.tray_stack[-1]
+            raise e
+        
         T = tray_world.tray_putdown_pose(tray, self.tray_stack)
         try:
             (pose,
@@ -186,13 +199,21 @@ class Executor(object):
         self.robot.Release(obj)
         self.tray_stack.append(obj)
         
+        
         #putting the object straight
         rot_angle = (np.pi / 2., 0., 0) #got this from the model
         rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
         T[:3, :3] = rot_mat
         T[2,3] -= 0.05        
         obj.SetTransform(T)
-        
+
+        try:
+            del self.grasping_locations_cache[obj_name]
+        except KeyError:
+            print "funny, object ", obj_name, " was not in cache.. something wrong here!"
+            print "cache is: ", self.grasping_locations_cache
+            raw_input("Press return to continue")            
+  
         print "Back to rest"
         utils.pr2_tuck_arm(self.robot)
         self.pause()
@@ -204,7 +225,7 @@ class Executor(object):
         if tray is None:
             raise ValueError("Object %s does not exist" % tray_name)
         
-        if len(self.tray_stack) > 0 and (np.random.uniform() < 0.5):
+        if len(self.tray_stack) > 0 and (np.random.uniform() <= 1.5):
             e = ExecutingException("Tray is heavy!")
             e.robot = self.robot
             e.object_to_grasp = tray
@@ -243,6 +264,17 @@ class Executor(object):
         self.tray_stack = []
         utils.pr2_tuck_arm(self.robot)
         self.pause()
+    
+    def pickfromtray(self, unused1, tray_name, obj_name, unused2):
+        tray = self.env.GetKinBody(tray_name)
+        if tray is None:
+            raise ValueError("Object %s does not exist" % tray_name)
+        obj = self.env.GetKinBody(obj_name)
+        if obj is None:
+            raise ValueError("Object %s does not exist" % obj_name)        
+        
+        self.grasp(obj_name, unused1, unused2)
+        self.tray_stack.remove(obj)
         
 
 class PlanParser(object):
@@ -403,6 +435,11 @@ class PlanParser(object):
             error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number,
                                                           msg )
             return
+        elif "Incompatible" in error.problem:
+            print "Objects are incompatible!"
+            msg = "(Bigger %s %s)" % (e.object_to_grasp, e.stacktop)
+            error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number,
+                                                          msg )            
         else:
             print "Don't know how to handle this problem!"
             
