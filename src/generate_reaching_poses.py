@@ -92,11 +92,15 @@ def generate_random_pos(robot, obj_to_grasp = None):
         min_y = envmin[1]
         min_th = np.pi        
     else:
-        obj_pos = obj_to_grasp.GetTransform()[:3,-1]
+        if type(obj_to_grasp) is openravepy.KinBody:
+            obj_pos = obj_to_grasp.GetTransform()[:3,-1]
+        else:
+            obj_pos = obj_to_grasp
         max_x = min(obj_pos[0] + 1.2, envmax[0])
         max_y = min(obj_pos[1] + 1.2, envmax[1])
         min_x = max(obj_pos[0] - 1.2, envmin[0])
         min_y = max(obj_pos[1] - 1.2, envmin[1])
+        
     
     #print "X ", (min_x, max_x), " Y: ", (min_y, max_y)
     x = np.random.uniform(min_x, max_x)
@@ -213,16 +217,15 @@ def get_collision_free_grasping_pose(robot,
         return (robot_pose, sol, torso_angle)
 
 def get_collision_free_ik_pose(robot,
-                                     object_to_grasp,
                                      ik_pose, 
-                                     max_trials = 100,                                     
+                                     max_trials = 100,
+                                     only_reachable=False
                                      ):
     """Returns the position from where the robot can reach a position (in
     cartesian coordinates). The active manipulator is used.
     
     Parameters:
     robot: an OpenRave robot instance
-    object_to_grasp: a KinBody that the robot should grasp
     max_trials: how many attempts before giving up
     use_general_grasps: f True, don't calculate actual grasp points, but use
      a pre-generated list. It is much faster if a grasping model has not been
@@ -241,11 +244,6 @@ def get_collision_free_ik_pose(robot,
     torso_angle = robot.GetJoint("torso_lift_joint").GetValues()[0]
     manip = robot.GetActiveManipulator()
     
-    try:
-        iter(ik_pose)
-    except TypeError:
-        ik_pose = [ik_pose]
-    
     ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
             robot,iktype=openravepy.IkParameterization.Type.Transform6D)
     if not ikmodel.load():
@@ -254,23 +252,24 @@ def get_collision_free_ik_pose(robot,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol = check_reachable(manip, ik_pose)
+    sol = check_reachable(manip, [ik_pose], only_reachable)
     isreachable = sol is not None
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
     
     num_trial = 0
+    xyz = ik_pose[:3, 3]
     with robot:
         while ((collision) or (not isreachable)) and (num_trial < max_trials):
             num_trial +=1
             torso_angle = move_random_torso(robot, min_torso, max_torso)
-            robot_pose = generate_random_pos(robot, object_to_grasp)
+            robot_pose = generate_random_pos(robot, xyz)
             
             robot.SetTransform(robot_pose) 
             report = openravepy.CollisionReport()
             collision = env.CheckCollision(robot, report=report)
             
             if not collision:
-                sol = check_reachable(manip, ik_pose)
+                sol = check_reachable(manip, [ik_pose], only_reachable)
                 isreachable = sol is not None                
             else:
                 continue
