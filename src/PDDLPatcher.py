@@ -19,6 +19,21 @@ class PDDLPatcher:
         deltaState.makeCWAExplicit(propSet)
         self.initFileMgr.patchInitState(deltaState)
 
+    def patchWithFDOutput(self, fdOutStr, stateNum):
+        print "Patching with state {0}.\n".format\
+            (stateNum)
+        op = OutputParser()
+        op.parseFDOutput(fdOutStr)
+        propSet = op.getPropSet()
+        deltaState = op.getStateByIndex(stateNum)
+
+        #deltaState.printState()
+        ##Compile away FF's CWA: figure out the set of props
+        ## it has CWA with, include those not in true set as false
+        deltaState.makeCWAExplicit(propSet)
+        self.initFileMgr.patchInitState(deltaState)
+
+
     def patchWithProps(self, inputFromContinuous):
         ## Suppose inputFromContinuous is a set of 
         ## propositions to be added to the state

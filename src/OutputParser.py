@@ -38,8 +38,7 @@ def tryIO(fname, mode, strBufPtr=""):
         print "Encountered IO Error {0}: {1}".format(e.errno, e.strerror)
         print "Ending process. \n"
         sys.exit(-1)
-    finally:
-        fhandle.close()
+
         
     return retVal
         
@@ -52,6 +51,30 @@ class OutputParser:
         print "Setting up FF o/p parser for {0}.".format(fname)
         if fname != "":
             self.parseFFOutput("")
+
+
+    def parseFDOutput(self, fdStr):
+        relevantPrefixStr = ""
+        relevantSegment = ""
+        stateList = []
+
+        pdb.set_trace()
+        if "Actual" in fdStr:
+            relevantPrefixStr = fdStr.rpartition("Actual")[0]
+        
+        if "Solution found!" in relevantPrefixStr:
+            relevantSegment = fdStr.partition("Solution found!")[2]
+        
+        for atomStateStr in relevantSegment.split(stateDelimiter):
+            stateStr = atomStateStr.replace("Atom ", "").strip()
+            if len(stateStr)>0:
+                s = self.getStateFromStr(stateStr)
+                if s.size() >0:
+                    stateList.append(s)
+
+        self.stateList = stateList
+        return stateList
+        
 
     def parseFFOutput(self, fileStr):
         ''' returns list of states from fileStr.
@@ -84,7 +107,7 @@ class OutputParser:
         s = State()
         for rawPropositionStr in stateStr.split("\n"):
             propositionStr = rawPropositionStr.strip().replace(\
-                "(", " ").replace(")", " ").lower()
+                "(", " ").replace(")", " ").replace(",", " ").lower()
             propositionStr = "("+propositionStr.strip()+")"
             if propositionStr != "()":
                 if propPattern.match(propositionStr) != None:
