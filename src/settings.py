@@ -2,6 +2,7 @@ path = "../domains/"
 errFileName = "robotics_autogen_err1.txt"
 
 ff = "../planners/FF-v2.3/ff"
+fd = "../planners/FD/src/plan-ipc seq-sat-fd-autotune-1 "
 pddlDomainFile = path #+ raw_input("Enter PDDL domain file name: ")
 if pddlDomainFile == path:
 #    pddlDomainFile = path+ "robotics_obstrn_compiled_dom2.pddl"
