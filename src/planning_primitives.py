@@ -215,7 +215,6 @@ class Executor(object):
         self.robot.Release(obj)
         self.tray_stack.append(obj)
         
-        
         #putting the object straight
         rot_angle = (np.pi / 2., 0., 0) #got this from the model
         rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
@@ -232,6 +231,7 @@ class Executor(object):
   
         print "Back to rest"
         utils.pr2_tuck_arm(self.robot)
+        print "The tray now has: ", self.tray_stack
         self.pause()
     
     def picktray(self, unused1, tray_name, unused2):
@@ -291,7 +291,12 @@ class Executor(object):
             raise ValueError("Object %s does not exist" % obj_name)        
         
         self.grasp(obj_name, unused1, unused2)
-        self.tray_stack.remove(obj)
+        try:
+            self.tray_stack.remove(obj)
+        except ValueError:
+            print "Apperntly %s is not on the tray. The list stack is: %s" % (obj,
+                                                                              self.tray_stack)
+            self.pause()
         
 
 class PlanParser(object):
