@@ -20,8 +20,6 @@ def execCmd(cmd,  successStr,  dumpFile, pollTime = 2):
     startTime = time.time()
     p = subprocess.Popen([cmd], shell = True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
-
-    
     while p.poll == None:
         time.sleep(pollTime)
         if time.time() - startTime >10:
@@ -56,8 +54,8 @@ def execCmd(cmd,  successStr,  dumpFile, pollTime = 2):
         print
         return msg
     else:
-        print "Failure... check %s for messages"%dumpFile
-        print
+        print "Failure... Planner message:"
+        print msg
         return -1
 
 
