@@ -291,13 +291,12 @@ class Executor(object):
             raise ValueError("Object %s does not exist" % obj_name)        
         
         self.grasp(obj_name, unused1, unused2)
-        #try:
-            #self.tray_stack.remove(obj)
-        #except ValueError:
-            #print "Apperntly %s is not on the tray. The list stack is: %s" % (obj,
-                                                                              #self.tray_stack)
-            #self.pause()
-        
+        try:
+            self.tray_stack.remove(obj)
+        except ValueError:
+            print "Apperntly %s is not on the tray. Never mind!" % (obj,
+                                                                              )
+            
 
 class PlanParser(object):
     def __init__(self, file_object_or_name, executor):
