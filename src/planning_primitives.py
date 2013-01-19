@@ -48,7 +48,9 @@ class Executor(object):
             if msg is None:
                 raw_input("Press return to continue")
             else:
-                raw_input(msg)
+                print msg
+                time.sleep(2.0)
+                #raw_input(msg + "... [press return]")
     
     def moveto(self, _unused1, pose):
         if type(pose) is str:
@@ -59,11 +61,11 @@ class Executor(object):
             print "Moving to pose "
             self.robot.SetTransform(pose)
     
-    def moveToWithinR1(self, _unused1, unused2):
+    def movetowithinr1(self, _unused1, unused2):
         print "Ignore me!"
-    def moveToWithinR2(self, _unused1, unused2):
+    def movetowithinr2(self, _unused1, unused2):
             print "ignore me !"    
-    def moveToAcrossRooms(self, _unused1, unused2, unused):
+    def movetoacrossrooms(self, _unused1, unused2, unused):
         print "ignore me !"    
     
     def grasp(self, obj_name, _unused1, _unused2):
