@@ -156,10 +156,7 @@
 
 )
 
-;(:goal (and 
-;       	    (OnTray random_object22)(OnTray random_object12) 
-;	    (OnTray random_object32)(InGripper tray))
-;)
+
 (:goal (and 
        	    (At random_object22 table1) (At random_object31 table1)
 	    (At random_object12 table1) 
