@@ -19,6 +19,8 @@
 	   (On ?obj1 ?obj2)
 	   (TempArea ?loc)
 	   (TrayLocation ?loc)
+	   (InRoom1 ?loc)
+	   (InRoom2 ?loc)
   )
 
 
@@ -75,13 +77,31 @@
  )
 
 
-  (:action moveTo
+  (:action moveToWithinR1
      :parameters(?l1 ?l2)
      :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
-     		   	(or (not (= ?l2 blf_trayLoc2) ) (= ?l1 door)  )
+     		   	(InRoom1 ?l1) (InRoom1 ?l2)
      		   	)
      :effect (and (not (RobotAt ?l1)) (RobotAt ?l2))
   )
+
+  (:action moveToWithinR2
+     :parameters(?l1 ?l2)
+     :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
+     		   	(InRoom2 ?l1) (InRoom2 ?l2)
+     		   	)
+     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2))
+  )
+
+  (:action moveToAcrossRooms
+     :parameters(?l1 ?l2 ?tray)
+     :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
+     		   	(InGripper ?tray)
+     		   	)
+     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2))
+  )
+
+  
 
 
 

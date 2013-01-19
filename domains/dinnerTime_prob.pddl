@@ -27,6 +27,15 @@
 	blf_table6
 
 	robotInitLoc
+ table1
+ table2
+ table3
+ table4
+ blf_table1
+ blf_table2
+ blf_table3
+ blf_table4
+
 )
 
 (:init
@@ -49,9 +58,21 @@
 (Location trayLoc1)
 (Location trayLoc2)
 (Location table6)
-(TempArea table6)
+(TempArea table1)
+(TempArea table2)
+(TempArea table3)
+(TempArea table4)
 (TrayLocation trayLoc1)
 (TrayLocation trayLoc2)
+
+(Location table1)
+(Location table2)
+(Location table3)
+(Location table4)
+(Location blf_table1)
+(Location blf_table2)
+(Location blf_table3)
+(Location blf_table4)
 
 
 (Location gp_random_object11)
@@ -85,6 +106,10 @@
 (IsAccessPointFor blf_trayLoc1 trayLoc1)
 (IsAccessPointFor blf_trayLoc2 trayLoc2)
 (IsAccessPointFor blf_table6 table6)
+(IsAccessPointFor blf_table1 table1)
+(IsAccessPointFor blf_table2 table2)
+(IsAccessPointFor blf_table3 table3)
+(IsAccessPointFor blf_table4 table4)
 
 
 (IsAccessPointForTray blf_tray tray)
@@ -97,9 +122,49 @@
 (IsGP gp_random_object32 random_object32)
 
 (Topmost None tray)
+
+
+(InRoom1 loc_random_object11)
+(InRoom1 loc_random_object21)
+(InRoom1 loc_random_object12)
+(InRoom1 loc_random_object22)
+(InRoom1 loc_random_object31)
+(InRoom1 loc_random_object32)
+(InRoom1 gp_random_object11)
+(InRoom1 gp_random_object21)
+(InRoom1 gp_random_object12)
+(InRoom1 gp_random_object22)
+(InRoom1 gp_random_object31)
+(InRoom1 gp_random_object32)
+(InRoom1 trayLoc1)
+(InRoom1 table6)
+(InRoom1 robotInitLoc)
+(InRoom1 blf_trayLoc1)
+(InRoom1 blf_table6)
+
+(InRoom2 table1)
+(InRoom2 table2)
+(InRoom2 table3)
+(InRoom2 table4)
+(InRoom2 blf_table1)
+(InRoom2 blf_table2)
+(InRoom2 blf_table3)
+(InRoom2 blf_table4)
+(InRoom2 trayLoc2)
+(InRoom2 blf_trayLoc2)
+
+
 )
 
-(:goal (and (OnTray random_object22)(OnTray random_object12) (OnTray random_object32)(InGripper tray))
+
+(:goal (and 
+       	    (At random_object22 table1) (At random_object31 table1)
+	    (At random_object12 table1) 
+	    
+       )
 )
+
+
+
 )
 

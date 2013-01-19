@@ -48,7 +48,9 @@ class Executor(object):
             if msg is None:
                 raw_input("Press return to continue")
             else:
-                raw_input(msg)
+                print msg
+                time.sleep(2.0)
+                #raw_input(msg + "... [press return]")
     
     def moveto(self, _unused1, pose):
         if type(pose) is str:
@@ -58,6 +60,13 @@ class Executor(object):
         else:
             print "Moving to pose "
             self.robot.SetTransform(pose)
+    
+    def movetowithinr1(self, _unused1, unused2):
+        print "Ignore me!"
+    def movetowithinr2(self, _unused1, unused2):
+            print "ignore me !"    
+    def movetoacrossrooms(self, _unused1, unused2, unused):
+        print "ignore me !"    
     
     def grasp(self, obj_name, _unused1, _unused2):
         print "Grasping object ", obj_name
@@ -206,7 +215,6 @@ class Executor(object):
         self.robot.Release(obj)
         self.tray_stack.append(obj)
         
-        
         #putting the object straight
         rot_angle = (np.pi / 2., 0., 0) #got this from the model
         rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
@@ -223,6 +231,7 @@ class Executor(object):
   
         print "Back to rest"
         utils.pr2_tuck_arm(self.robot)
+        print "The tray now has: ", self.tray_stack
         self.pause()
     
     def picktray(self, unused1, tray_name, unused2):
@@ -273,7 +282,7 @@ class Executor(object):
         utils.pr2_tuck_arm(self.robot)
         self.pause()
     
-    def pickfromtray(self, unused1, tray_name, obj_name, unused2):
+    def pickfromtray(self, unused1, tray_name, obj_name, unused2, unused3):
         tray = self.env.GetKinBody(tray_name)
         if tray is None:
             raise ValueError("Object %s does not exist" % tray_name)
@@ -282,8 +291,12 @@ class Executor(object):
             raise ValueError("Object %s does not exist" % obj_name)        
         
         self.grasp(obj_name, unused1, unused2)
-        self.tray_stack.remove(obj)
-        
+        try:
+            self.tray_stack.remove(obj)
+        except ValueError:
+            print "Apperntly %s is not on the tray. Never mind!" % (obj,
+                                                                              )
+            
 
 class PlanParser(object):
     def __init__(self, file_object_or_name, executor):
