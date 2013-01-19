@@ -59,6 +59,13 @@ class Executor(object):
             print "Moving to pose "
             self.robot.SetTransform(pose)
     
+    def moveToWithinR1(self, _unused1, unused2):
+        print "Ignore me!"
+    def moveToWithinR2(self, _unused1, unused2):
+            print "ignore me !"    
+    def moveToAcrossRooms(self, _unused1, unused2, unused):
+        print "ignore me !"    
+    
     def grasp(self, obj_name, _unused1, _unused2):
         print "Grasping object ", obj_name
         obj = self.env.GetKinBody(obj_name)
