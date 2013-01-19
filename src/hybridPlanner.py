@@ -6,7 +6,7 @@ import getopt
 import StringIO
 totalExecTime = 0
 
-def execCmd(cmd,  successStr,  dumpFile, pollTime = 2):
+def execCmd(cmd,  successStr, pollTime = 2):
     ''' A generic utility for executing a command. 
     Dumpfile stores stdout and stderr'''
     initTime = time.time()
@@ -58,26 +58,40 @@ def execCmd(cmd,  successStr,  dumpFile, pollTime = 2):
         print msg
         return -1
 
+def runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile):
+    ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile
+    
+    retVal = execCmd(ffCmdLine, "found legal plan")
+    if retVal ==-1:
+        sys.exit(-1)
+        
+    tryIO(ffOutputFile, "write", retVal)
+    ffOutStr = OutputParser(ffOutputFile).getFFPlan()
+    return ffOutStr
+
+def runPlannerFD(pddlDomainFile, pddlProblemFile, ffOutputFile):
+    ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile
+    
+    retVal = execCmd(ffCmdLine, "found legal plan")
+    if retVal ==-1:
+        sys.exit(-1)
+        
+    tryIO(ffOutputFile, "write", retVal)
+    ffOutStr = OutputParser(ffOutputFile).getFFPlan()
+    return ffOutStr
+
+
+
 
 def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer):
     iteration = 0
     ex = planning_primitives.initOpenRave(viewer)
     while True:
         iteration += 1
-        ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile
         ffOutputFile = pddlProblemFile+ ".out"
-
-        retVal = execCmd(ffCmdLine, "found legal plan",  ffOutputFile)
-        if retVal ==-1:
-                sys.exit(-1)
-        
-        tryIO(ffOutputFile, "write", retVal)
-        ffOutStr = OutputParser(ffOutputFile).getFFPlan()
+        ffOutStr = runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile)
 
         print "Computed plan: \n" + ffOutStr
-        #planFile = pddlProblemFile+".plan"
-        #tryIO(planFile, "write", ffOutStr)
-        #time.sleep(2)
         strPlanFile = StringIO.StringIO()
         strPlanFile.write(ffOutStr)
         strPlanFile.seek(0)
@@ -98,8 +112,6 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer):
         print errorStr
         if viewer:
             raw_input("Press return to continue")
-#        else:
-#            time.sleep(5)
     
         errorLines = errorStr.lower().split("\n")
     
