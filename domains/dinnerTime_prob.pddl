@@ -58,6 +58,7 @@
 (Location trayLoc1)
 (Location trayLoc2)
 (Location table6)
+(TempArea table6)
 (TempArea table1)
 (TempArea table2)
 (TempArea table3)
@@ -158,9 +159,12 @@
 
 
 (:goal (and 
-       	    (At random_object22 table1) (At random_object31 table1)
-	    (At random_object12 table1) 
-	    
+;       	    (At random_object21 table4) (At random_object31 table4)
+;	    (At random_object11 table4) 
+	    (ontray random_object11)
+	    (ontray random_object21)
+	    (ontray random_object31)
+
        )
 )
 
