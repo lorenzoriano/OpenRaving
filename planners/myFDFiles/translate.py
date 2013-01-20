@@ -130,8 +130,6 @@ def translate_strips_conditions_aux(conditions, dictionary, ranges):
             sorted_conds = sorted(condition.items(), key=number_of_values)
             flat_conds = [{}]
             for var, vals in sorted_conds:
-                ####debug
-                print("lengths %d %d \n"% (len(flat_conds), len(sorted_conds)))
                 if len(vals) == 1:
                     for cond in flat_conds:
                         cond[var] = vals.pop() # destroys the input here
