@@ -72,7 +72,7 @@ def runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile):
 
 
 def runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFName="fdOutput", \
-                     pollTime=10, planQuality=2, TimeLimit=350):
+                     pollTime=5, planQuality=2, TimeLimit=350):
     '''fdOutputFName.X only gets the output plan. messages go to fdOutputFName '''
     fdCmdLine = fd + " " + pddlDomainFile +"  " + pddlProblemFile \
                          + " "+ fdOutputFName
@@ -86,7 +86,7 @@ def runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFName="fdOutput", \
     startTime = time.time()
 
     while p.poll() == None:
-        print repr(glob.glob(fdOutputFName+".*"))
+        print "Available plans: "+ repr(glob.glob(fdOutputFName+".*"))
         time.sleep(pollTime)
         if (os.path.exists(fdOutputFName+ext)  or \
                 ((time.time() - startTime) > TimeLimit)):
@@ -110,7 +110,7 @@ def runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFName="fdOutput", \
 
     tryIO(fdOutputFName, "write", msg)
 
-    bestExt = "."+repr(len(glob.glob(fdOutputFName+".*"))+1)
+    bestExt = "."+repr(len(glob.glob(fdOutputFName+".*")))
     fdPlanStr = tryIO(fdOutputFName+bestExt, "read")
     return fdPlanStr, msg
 
@@ -123,11 +123,11 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer):
     while True:
         iteration += 1
         ffOutputFile = pddlProblemFile+ ".out"
-        ffOutStr = runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile)
+        ffPlanStr = runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile)
 
-        print "Computed plan: \n" + ffOutStr
+        print "Computed plan: \n" + ffPlanStr
         strPlanFile = StringIO.StringIO()
-        strPlanFile.write(ffOutStr)
+        strPlanFile.write(ffPlanStr)
         strPlanFile.seek(0)
     
         try:
@@ -186,8 +186,9 @@ def main(argv):
 
 if __name__ == "__main__":
     myPatcher = PDDLPatcher(initialProblemFile)
-    main(sys.argv)
-    #pddlDomainFile = '../domains/dinnerTimeNoNegationCosts_dom.pddl'
-    #pddlProblemFile = '../domains/dinnerTimeNoNegationCosts_prob.pddl'
-    #plan, msg = runPlannerFD(pddlDomainFile, pddlProblemFile)
-    #op = OutputParser("").parseFDOutput(msg)
+    #main(sys.argv)
+    pddlDomainFile = '../domains/dinnerTimeNoNegationCosts_dom.pddl'
+    pddlProblemFile = '../domains/dinnerTimeNoNegationCosts_prob.pddl'
+    plan, fdOutStr = runPlannerFD(pddlDomainFile, pddlProblemFile)
+    op = OutputParser("")
+    myPatcher.patchWithFDOutput(fdOutStr, 10)

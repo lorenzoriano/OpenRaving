@@ -19,7 +19,18 @@ class InitFileMgr:
     def writeFile(self, ofname, txt):
         tryIO(ofname, "write", txt)
             
+    def pushCurrentInitToHistory(self):
+        s=State()
+        s.patch(self.initState)
+        self.patchedStateSequence.append(s)
         
+    def replaceInitState(self, newState):
+        self.pushCurrentInitToHistory()
+        self.patchSequence.append('replaced state')
+        self.initState = State()
+        self.initState.patch(newState)
+     
+     
     def getCurrentState(self):
         return self.initState
 

@@ -58,18 +58,32 @@ class OutputParser:
         relevantSegment = ""
         stateList = []
 
-        pdb.set_trace()
+        
+        if not "Solution found!" in fdStr:
+            print "Solution not found. Error"
+            sys.exit(-1)
+            
+     
         if "Actual" in fdStr:
-            relevantPrefixStr = fdStr.rpartition("Actual")[0]
+            relevantPrefixStr = fdStr.rpartition("Actual search time")[0]
+        else:
+            print "Output from planner garbled"
+            pdb.set_trace()
+     
+        relevantSegment = relevantPrefixStr.partition("Solution found!")[2]
         
-        if "Solution found!" in relevantPrefixStr:
-            relevantSegment = fdStr.partition("Solution found!")[2]
-        
+        #get pruned atoms
+        prunedList = fdStr.partition("Translating task:")[0].split("\n")
+        pruneLines = filter(lambda x: "pruned" in x and "=" not in x, prunedList)
+        prunedFacts = [s.replace("pruned static init fact: Atom ", "") for s in pruneLines]
+        pdb.set_trace()
         for atomStateStr in relevantSegment.split(stateDelimiter):
             stateStr = atomStateStr.replace("Atom ", "").strip()
             if len(stateStr)>0:
                 s = self.getStateFromStr(stateStr)
                 if s.size() >0:
+                    for atom in prunedFacts:
+                        s.addTrue(atom)
                     stateList.append(s)
 
         self.stateList = stateList

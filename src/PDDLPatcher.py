@@ -20,18 +20,14 @@ class PDDLPatcher:
         self.initFileMgr.patchInitState(deltaState)
 
     def patchWithFDOutput(self, fdOutStr, stateNum):
-        print "Patching with state {0}.\n".format\
-            (stateNum)
-        op = OutputParser()
+        ''' no need to do any patching. return fd state
+            because we use the pruned list'''
+        print "returning state "+repr(stateNum)    
+        op = OutputParser("")
         op.parseFDOutput(fdOutStr)
-        propSet = op.getPropSet()
-        deltaState = op.getStateByIndex(stateNum)
 
-        #deltaState.printState()
-        ##Compile away FF's CWA: figure out the set of props
-        ## it has CWA with, include those not in true set as false
-        deltaState.makeCWAExplicit(propSet)
-        self.initFileMgr.patchInitState(deltaState)
+        self.initFileMgr.replaceInitState(op.getStateByIndex(stateNum))
+
 
 
     def patchWithProps(self, inputFromContinuous):
@@ -82,7 +78,7 @@ if __name__ == "__main__":
     
     # myPatcher.patchWithNewInterpretation("p1", ["(x p1 p2)"])
     # myPatcher.printInitState()
-    path = "/Users/Sid/work/Planners/myDomains/"
+    path = "../domains/"
 
     myPatcher = PDDLPatcher(path+"robotics_autogen_prob.pddl")
     myPatcher.printInitState()
