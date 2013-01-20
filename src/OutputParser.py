@@ -48,12 +48,13 @@ class OutputParser:
         self.fname = fname
         self.stateList = []
         self.propSet = set()
-        print "Setting up FF o/p parser for {0}.".format(fname)
+        print "Setting up o/p parser for {0}.".format(fname)
         if fname != "":
             self.parseFFOutput("")
 
 
     def parseFDOutput(self, fdStr):
+        "Planner mode for parsing: FD"
         relevantPrefixStr = ""
         relevantSegment = ""
         stateList = []
@@ -76,14 +77,15 @@ class OutputParser:
         prunedList = fdStr.partition("Translating task:")[0].split("\n")
         pruneLines = filter(lambda x: "pruned" in x and "=" not in x, prunedList)
         prunedFacts = [s.replace("pruned static init fact: Atom ", "") for s in pruneLines]
-        pdb.set_trace()
+        constantState = self.getStateFromStr("\n".join(prunedFacts))
+        
+        
         for atomStateStr in relevantSegment.split(stateDelimiter):
             stateStr = atomStateStr.replace("Atom ", "").strip()
             if len(stateStr)>0:
                 s = self.getStateFromStr(stateStr)
                 if s.size() >0:
-                    for atom in prunedFacts:
-                        s.addTrue(atom)
+                    s.patch(constantState)
                     stateList.append(s)
 
         self.stateList = stateList
@@ -94,7 +96,7 @@ class OutputParser:
         ''' returns list of states from fileStr.
         First state in the list is the state before 
         the first action.'''
-
+        print "Planner mode for parsing: FF"
         if self.fname != "":
             #f = tryOpen(self.fname, "r")
             #fstr = f.read()

@@ -40,7 +40,7 @@ class PDDLPatcher:
         print inputFromContinuous
         print
         deltaState = State()
-        map(lambda x: deltaState.addProposition(x), inputFromContinuous)
+        z=map(lambda x: deltaState.addProposition(x), inputFromContinuous)
         self.initFileMgr.patchInitState(deltaState)
 
 

@@ -6,18 +6,27 @@ class State:
         self.__falseSet = set();
 
     def addProposition(self, propStr):
-        r = re.compile("\(not-", re.IGNORECASE)
+        r1 = re.compile("\(not-", re.IGNORECASE)
+        r2 = re.compile("\(not ", re.IGNORECASE)
+        propStr = re.sub("\s+", " ", propStr).strip()
         
-        if r.match(propStr) == None:
-            self.addTrue(propStr.strip())
+        if (r1.match(propStr) != None):
+            self.addFalse(r1.sub("(", propStr.strip()))
+        elif (r2.match(propStr) != None):
+            toAdd = r2.sub("(", propStr.strip())
+            toAdd= toAdd.replace("((", "(").replace("))", ")")
+            self.addFalse(toAdd)
         else:
-            self.addFalse(r.sub("(", propStr.strip()))
-
+            self.addTrue(propStr.strip())
+       
+            
     def addTrue(self, propStr):
         self.__trueSet.add(propStr)
+        self.__falseSet.discard(propStr)
 
     def addFalse(self, propStr):
         self.__falseSet.add(propStr)
+        self.__trueSet.discard(propStr)
 
     def getTrueProps(self):
         return self.__trueSet
