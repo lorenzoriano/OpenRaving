@@ -33,7 +33,7 @@ def execCmd(cmd,  successStr, pollTime = 2):
                 continue
             elif ans.strip() == "r":
                 os.kill(p.pid+1,  9)
-                return execCmd(cmd, successStr, dumpFile)
+                return execCmd(cmd, successStr)
             else:
                 print "Unrecognized response. Continuing."
 
@@ -59,8 +59,6 @@ def execCmd(cmd,  successStr, pollTime = 2):
         print msg
         return -1
 
-
-
 def runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile):
     ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile
     
@@ -73,20 +71,26 @@ def runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile):
     return ffOutStr
 
 
-def runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFile, pollTime=10, planQuality=2, TimeLimit=350):
-    '''fdOutputFile.2 only gets the output plan. messages go to fdOutputFile '''
-    fdCmdLine = fd + " " + pddlDomainFile +"  " + pddlProblemFile + " "+ fdOutputFile
+def runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFName="fdOutput", \
+                     pollTime=10, planQuality=2, TimeLimit=350):
+    '''fdOutputFName.X only gets the output plan. messages go to fdOutputFName '''
+    fdCmdLine = fd + " " + pddlDomainFile +"  " + pddlProblemFile \
+                         + " "+ fdOutputFName
     ext = "."+repr(planQuality)
-    if os.path.exists(fdOutputFile+ext):
-        os.remove(fdOutputFile+ext)
+    for fileName in glob.glob(fdOutputFName+".*"):
+        os.remove(fileName)
 
-    p = subprocess.Popen([fdCmdLine], shell = True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen([fdCmdLine], shell = True, \
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print "Running " + fdCmdLine
     startTime = time.time()
+
     while p.poll() == None:
-        print "."
+        print repr(glob.glob(fdOutputFName+".*"))
         time.sleep(pollTime)
-        if (os.path.exists(fdOutputFile+ext)  or ((time.time() - startTime) > TimeLimit)):
+        if (os.path.exists(fdOutputFName+ext)  or \
+                ((time.time() - startTime) > TimeLimit)):
+            print "kill downward process"
             os.kill(p.pid, 9)
             break
     endTime = time.time()
@@ -104,11 +108,11 @@ def runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFile, pollTime=10, pla
         print "Failure... Planner message:"
         print msg
 
-    tryIO(fdOutputFile, "write", msg)
+    tryIO(fdOutputFName, "write", msg)
 
-    bestExt = "."+repr(len(glob.glob(fdOutputFile+".*")))
-    fdOutStr = tryIO(fdOutputFile+bestExt, "read")
-    return fdOutStr, msg
+    bestExt = "."+repr(len(glob.glob(fdOutputFName+".*"))+1)
+    fdPlanStr = tryIO(fdOutputFName+bestExt, "read")
+    return fdPlanStr, msg
 
 
 
@@ -182,10 +186,8 @@ def main(argv):
 
 if __name__ == "__main__":
     myPatcher = PDDLPatcher(initialProblemFile)
-    #myPatcher.printInitState()
     main(sys.argv)
     #pddlDomainFile = '../domains/dinnerTimeNoNegationCosts_dom.pddl'
     #pddlProblemFile = '../domains/dinnerTimeNoNegationCosts_prob.pddl'
-    #fdOutputFile = "fdOutput"
-    #plan, msg = runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFile)
+    #plan, msg = runPlannerFD(pddlDomainFile, pddlProblemFile)
     #op = OutputParser("").parseFDOutput(msg)
