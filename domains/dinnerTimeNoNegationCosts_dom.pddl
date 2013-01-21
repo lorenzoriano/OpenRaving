@@ -33,7 +33,7 @@
 		     (At ?tray ?trayloc)
    		     (IsAccessPointFor ?lrobot ?trayloc) (InGripper ?obj1) 
 		     (Topmost ?obj2 ?tray) 
-		     ;(not (Bigger ?obj1 ?obj2))
+		     (smaller ?obj1 ?obj2)
 		     )
    :effect(and (not (InGripper ?obj1)) (OnTray ?obj1) (on ?obj1 ?obj2)
    	       (not (Topmost ?obj2 ?tray)) (Topmost ?obj1 ?tray) 
