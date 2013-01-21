@@ -104,25 +104,15 @@
 
 
 
-  (:action moveAcrossRooms12
+  (:action moveToAcrossRooms
      :parameters(?l1 ?l2 ?o)
      :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
-     		   	(InRoom1 ?l1) (InRoom2 ?l2) (Ingripper ?o) 
+     		   	(Ingripper ?o) 
 			(Istray ?o)
      		   	)
      :effect (and (not (RobotAt ?l1)) (RobotAt ?l2)
      	     	  )
   )
-
-  (:action moveAcrossRooms21
-     :parameters(?l1 ?l2)
-     :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
-     		   	(InRoom2 ?l1) (InRoom1 ?l2) 
-     		   	)
-     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2)
-     	          	     	  )
-  )
-
 
 
  (:action grasp
