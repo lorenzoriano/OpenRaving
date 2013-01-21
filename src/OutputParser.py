@@ -53,7 +53,7 @@ class OutputParser:
             self.parseFFOutput("")
 
 
-    def parseFDOutput(self, fdStr):
+    def parseFDOutput(self, fdStr, planCount):
         "Planner mode for parsing: FD"
         relevantPrefixStr = ""
         relevantSegment = ""
@@ -65,13 +65,16 @@ class OutputParser:
             sys.exit(-1)
             
      
-        if "Actual" in fdStr:
-            relevantPrefixStr = fdStr.rpartition("Actual search time")[0]
+        if "End state list" in fdStr:
+            stateListSegments = fdStr.split("End state list")
+            print "Found "+repr(len(stateListSegments)-1) + " state lists"
+            print "using list #" + repr(planCount)
+            relevantSegment = stateListSegments[planCount-1].split("Begin state list")[1]
         else:
             print "Output from planner garbled"
             pdb.set_trace()
      
-        relevantSegment = relevantPrefixStr.partition("Solution found!")[2]
+        
         
         #get pruned atoms
         prunedList = fdStr.partition("Translating task:")[0].split("\n")
