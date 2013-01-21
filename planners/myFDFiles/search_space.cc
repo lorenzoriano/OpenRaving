@@ -188,11 +188,13 @@ void SearchSpace::trace_path(const State &goal_state,
     }
     reverse(path.begin(), path.end());
     reverse(state_sequence.begin(), state_sequence.end());
+    cout << "Begin state list" <<endl;
     for (size_t i = 0; i < state_sequence.size(); ++i) {
         cout << "State " << endl;
         state_sequence[i].dump_pddl();
         cout << endl;
     }
+    cout << "End state list"<<endl;
 }
 
 void SearchSpace::dump() {
