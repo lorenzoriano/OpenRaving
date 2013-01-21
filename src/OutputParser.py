@@ -38,8 +38,7 @@ def tryIO(fname, mode, strBufPtr=""):
         print "Encountered IO Error {0}: {1}".format(e.errno, e.strerror)
         print "Ending process. \n"
         sys.exit(-1)
-    finally:
-        fhandle.close()
+
         
     return retVal
         
@@ -49,15 +48,58 @@ class OutputParser:
         self.fname = fname
         self.stateList = []
         self.propSet = set()
-        print "Setting up FF o/p parser for {0}.".format(fname)
+        print "Setting up o/p parser for {0}.".format(fname)
         if fname != "":
             self.parseFFOutput("")
+
+
+    def parseFDOutput(self, fdStr, planCount):
+        "Planner mode for parsing: FD"
+        relevantPrefixStr = ""
+        relevantSegment = ""
+        stateList = []
+
+        
+        if not "Solution found!" in fdStr:
+            print "Solution not found. Error"
+            sys.exit(-1)
+            
+     
+        if "End state list" in fdStr:
+            stateListSegments = fdStr.split("End state list")
+            print "Found "+repr(len(stateListSegments)-1) + " state lists"
+            print "using list #" + repr(planCount)
+            relevantSegment = stateListSegments[planCount-1].split("Begin state list")[1]
+        else:
+            print "Output from planner garbled"
+            pdb.set_trace()
+     
+        
+        
+        #get pruned atoms
+        prunedList = fdStr.partition("Translating task:")[0].split("\n")
+        pruneLines = filter(lambda x: "pruned" in x and "=" not in x, prunedList)
+        prunedFacts = [s.replace("pruned static init fact: Atom ", "") for s in pruneLines]
+        constantState = self.getStateFromStr("\n".join(prunedFacts))
+        
+        
+        for atomStateStr in relevantSegment.split(stateDelimiter):
+            stateStr = atomStateStr.replace("Atom ", "").strip()
+            if len(stateStr)>0:
+                s = self.getStateFromStr(stateStr)
+                if s.size() >0:
+                    s.patch(constantState)
+                    stateList.append(s)
+
+        self.stateList = stateList
+        return stateList
+        
 
     def parseFFOutput(self, fileStr):
         ''' returns list of states from fileStr.
         First state in the list is the state before 
         the first action.'''
-
+        print "Planner mode for parsing: FF"
         if self.fname != "":
             #f = tryOpen(self.fname, "r")
             #fstr = f.read()
@@ -84,7 +126,7 @@ class OutputParser:
         s = State()
         for rawPropositionStr in stateStr.split("\n"):
             propositionStr = rawPropositionStr.strip().replace(\
-                "(", " ").replace(")", " ").lower()
+                "(", " ").replace(")", " ").replace(",", " ").lower()
             propositionStr = "("+propositionStr.strip()+")"
             if propositionStr != "()":
                 if propPattern.match(propositionStr) != None:

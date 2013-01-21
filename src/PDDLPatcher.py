@@ -19,6 +19,17 @@ class PDDLPatcher:
         deltaState.makeCWAExplicit(propSet)
         self.initFileMgr.patchInitState(deltaState)
 
+    def patchWithFDOutput(self, fdOutStr, stateNum, planCount):
+        ''' no need to do any patching. return fd state
+            because we use the pruned list'''
+        print "returning state "+repr(stateNum)    
+        op = OutputParser("")
+        op.parseFDOutput(fdOutStr, planCount)
+
+        self.initFileMgr.replaceInitState(op.getStateByIndex(stateNum))
+
+
+
     def patchWithProps(self, inputFromContinuous):
         ## Suppose inputFromContinuous is a set of 
         ## propositions to be added to the state
@@ -29,7 +40,7 @@ class PDDLPatcher:
         print inputFromContinuous
         print
         deltaState = State()
-        map(lambda x: deltaState.addProposition(x), inputFromContinuous)
+        z=map(lambda x: deltaState.addProposition(x), inputFromContinuous)
         self.initFileMgr.patchInitState(deltaState)
 
 
@@ -67,7 +78,7 @@ if __name__ == "__main__":
     
     # myPatcher.patchWithNewInterpretation("p1", ["(x p1 p2)"])
     # myPatcher.printInitState()
-    path = "/Users/Sid/work/Planners/myDomains/"
+    path = "../domains/"
 
     myPatcher = PDDLPatcher(path+"robotics_autogen_prob.pddl")
     myPatcher.printInitState()
