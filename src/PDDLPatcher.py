@@ -19,12 +19,12 @@ class PDDLPatcher:
         deltaState.makeCWAExplicit(propSet)
         self.initFileMgr.patchInitState(deltaState)
 
-    def patchWithFDOutput(self, fdOutStr, stateNum):
+    def patchWithFDOutput(self, fdOutStr, stateNum, planCount):
         ''' no need to do any patching. return fd state
             because we use the pruned list'''
         print "returning state "+repr(stateNum)    
         op = OutputParser("")
-        op.parseFDOutput(fdOutStr)
+        op.parseFDOutput(fdOutStr, planCount)
 
         self.initFileMgr.replaceInitState(op.getStateByIndex(stateNum))
 
