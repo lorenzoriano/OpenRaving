@@ -22,8 +22,18 @@
 	;blf_trayLoc2	
 	None
 
+
 	table1
 	blf_table1
+
+	table2
+	blf_table2
+
+	table3
+	blf_table3
+
+	table4
+	blf_table4
 	
 	table6
 	blf_table6
@@ -54,8 +64,15 @@
 (Location trayLoc2)
 (Location table6)
 (Location table1)
+(Location table2)
+(Location table3)
+(Location table4)
+(Location table1)
 (TempArea table6)
 (TempArea table1)
+(TempArea table2)
+(TempArea table3)
+(TempArea table4)
 (TrayLocation trayLoc1)
 (TrayLocation trayLoc2)
 
@@ -75,6 +92,9 @@
 (Location blf_trayLoc2)
 (Location blf_table6)
 (Location blf_table1)
+(Location blf_table2)
+(Location blf_table3)
+(Location blf_table4)
 
 
 
@@ -99,6 +119,12 @@
 
 (InRoom2 table1)
 (InRoom2 blf_table1)
+(InRoom2 table2)
+(InRoom2 blf_table2)
+(InRoom2 table3)
+(InRoom2 blf_table3)
+(InRoom2 table4)
+(InRoom2 blf_table4)
 (InRoom2 trayLoc2)
 (InRoom2 blf_trayLoc2)
 
@@ -117,6 +143,9 @@
 (IsAccessPointFor blf_trayLoc2 trayLoc2)
 (IsAccessPointFor blf_table6 table6)
 (IsAccessPointFor blf_table1 table1)
+(IsAccessPointFor blf_table2 table2)
+(IsAccessPointFor blf_table3 table3)
+(IsAccessPointFor blf_table4 table4)
 
 
 (IsAccessPointForTray blf_tray tray)
@@ -175,11 +204,9 @@
 )
 
 (:goal (and 
-      	    (OnTray random_object21)
-      	    (OnTray random_object11) 
-            (OnTray random_object31)
-	    (Ingripper tray)
-	    (RobotAt blf_trayLoc1)
+      	    (At random_object21 table4)
+      	    (At random_object11 table4) 
+            (At random_object31 table4)
 	    )
 )
 
