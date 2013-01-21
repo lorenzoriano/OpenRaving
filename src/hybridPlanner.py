@@ -193,6 +193,7 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, planner = "ff"):
         print errorStr
         if viewer:
             raw_input("Press return to continue")
+        
             
         pddlProblemFile = initialProblemFile.replace(".pddl", repr(iteration) + ".pddl")
         updateInitFile(pddlProblemFile, iteration, plannerOutFname, \

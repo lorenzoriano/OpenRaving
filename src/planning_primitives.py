@@ -458,10 +458,10 @@ class PlanParser(object):
             return
         elif "Incompatible" in error.problem:
             print "Objects are incompatible!"
-            msg = "(Bigger %s %s)" % (error.object_to_grasp.GetName(),
-                                      error.stacktop.GetName())
-            #msg = "(not (smaller %s %s))" % (error.object_to_grasp.GetName(),
+            #msg = "(Bigger %s %s)" % (error.object_to_grasp.GetName(),
              #                         error.stacktop.GetName())
+            msg = "(not (smaller %s %s))" % (error.object_to_grasp.GetName(),
+                                             error.stacktop.GetName())
 
             error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number,
                                                           msg )            

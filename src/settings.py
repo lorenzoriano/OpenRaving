@@ -7,14 +7,17 @@ pddlDomainFile = path #+ raw_input("Enter PDDL domain file name: ")
 if pddlDomainFile == path:
 #    pddlDomainFile = path+ "robotics_obstrn_compiled_dom2.pddl"
      # for ff, dinnertime:
-     pddlDomainFile = path+ "dinnerTime_dom.pddl"
-     #pddlDomainFile = path+ "dinnerTimeNoNegationCosts_dom.pddl"
+     #pddlDomainFile = path+ "dinnerTime_dom.pddl"   
+     pddlDomainFile = path+ "dinnerTimeNoNegation_dom.pddl"
+    #pddlDomainFile = path+ "dinnerTimeNoNegationCosts_dom.pddl"
 
 initialProblemFile = path #+ raw_input("Enter PDDL problem file name: ")
 if initialProblemFile == path:
 #    initialProblemFile = path + "robotics_autogen_prob.pddl"
     #for ff, dinnertime:
-    initialProblemFile = path + "dinnerTime_prob.pddl"
+    #initialProblemFile = path + "dinnerTime_prob.pddl"
+    initialProblemFile = path + "dinnerTimeNoNegation_prob.pddl"
+
     #initialProblemFile = path + "dinnerTimeNoNegationCosts_prob.pddl"
 
 
