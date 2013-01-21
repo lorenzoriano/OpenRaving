@@ -69,9 +69,9 @@ class InitFileMgr:
         propList.sort()
         
         pddlPart1 = pddlStr.split("(:init")[0]
-        pddlPart2 = pddlStr.split("(:init")[1].strip().split("(:")[1]
+        pddlPart2 = pddlStr.split("(:init")[1].strip().split("(:goal")[1]
         pddlOutStr = pddlPart1 + "\n\n(:init \n" + "\n".join(propList) + ")" +\
-            "\n\n(:" + pddlPart2
+            "\n\n(:goal" + pddlPart2
 
         # for section in pddlStr.split("(:"):
         #     if section.strip().find("init") != 0:
