@@ -118,7 +118,7 @@ def put_left_arm_over_tray(robot, tray):
     else:
         raise generate_reaching_poses.GraspingPoseError("No IK solution for tray right side")
     
-def move_robot_base_infront_tray(robot, tray):
+def move_robot_base_infront_tray(robot, tray, execute=True):
     """Move the robot so that it is facing the tray. This means that the tray x and
     y position will be positive in respect to the robot's. Orientation will be fixed.
     """
@@ -135,7 +135,9 @@ def move_robot_base_infront_tray(robot, tray):
     #changing y
     robotT[1, 3] = trayT[1, 3]
     #z is unchanged
-    robot.SetTransform(robotT)
+    if execute:
+        robot.SetTransform(robotT)
+    return robotT
     
 def tray_putdown_pose(tray, stack_of_items = None):
     """Returns a position right above the tray with the gripper pointing down.
@@ -163,3 +165,30 @@ def get_stack_height(list_of_objects):
         height += ab.extents()[2]
     
     return height
+
+from numpy import array
+dest_random_object21 = array([[  1.000e+00,  -3.157e-15,   0.000e+00,  -1.361e+00],
+       [  0.000e+00,  -2.492e-30,  -1.000e+00,   2.321e-01],
+       [  3.157e-15,   1.000e+00,  -2.492e-30,   7.447e-01],
+       [  0.000e+00,   0.000e+00,   0.000e+00,   1.000e+00]])
+dest_random_object31 = array([[  1.000e+00,  -3.157e-15,   0.000e+00,  -1.454e+00],
+       [  0.000e+00,  -2.492e-30,  -1.000e+00,  -4.364e-01],
+       [  3.157e-15,   1.000e+00,  -2.492e-30,   7.447e-01],
+       [  0.000e+00,   0.000e+00,   0.000e+00,   1.000e+00]])
+dest_random_object32 = array([[  1.000e+00,  -3.157e-15,   0.000e+00,  -1.419e+00],
+       [  0.000e+00,  -2.492e-30,  -1.000e+00,   4.608e-01],
+       [  3.157e-15,   1.000e+00,  -2.492e-30,   7.447e-01],
+       [  0.000e+00,   0.000e+00,   0.000e+00,   1.000e+00]])
+dest_random_object22 = array([[  1.000e+00,  -3.157e-15,   0.000e+00,  -1.597e+00],
+       [  0.000e+00,  -2.492e-30,  -1.000e+00,  -2.633e-01],
+       [  3.157e-15,   1.000e+00,  -2.492e-30,   7.447e-01],
+       [  0.000e+00,   0.000e+00,   0.000e+00,   1.000e+00]])
+dest_random_object11 = array([[  1.000e+00,  -3.157e-15,   0.000e+00,  -1.230e+00],
+       [  0.000e+00,  -2.492e-30,  -1.000e+00,  -4.188e-01],
+       [  3.157e-15,   1.000e+00,  -2.492e-30,   7.447e-01],
+       [  0.000e+00,   0.000e+00,   0.000e+00,   1.000e+00]])
+dest_random_object12 = array([[  1.000e+00,  -3.157e-15,   0.000e+00,  -1.647e+00],
+       [  0.000e+00,  -2.492e-30,  -1.000e+00,   4.507e-01],
+       [  3.157e-15,   1.000e+00,  -2.492e-30,   7.447e-01],
+       [  0.000e+00,   0.000e+00,   0.000e+00,   1.000e+00]])
+
