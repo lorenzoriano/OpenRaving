@@ -162,7 +162,6 @@ def updateInitFile(pddlProblemFile, iteration, plannerOutFname, \
     myPatcher.patchWithProps(propList)
     print "State to re-plan from:"
     myPatcher.printInitState()
-    pdb.set_trace()
     myPatcher.writeCurrentInitState(pddlProblemFile)
 
 
