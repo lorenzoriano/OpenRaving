@@ -214,7 +214,7 @@ def main(argv):
             viewer = True
 
             
-    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer, planner="fd")
+    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer, planner="ff")
 
 
 if __name__ == "__main__":
