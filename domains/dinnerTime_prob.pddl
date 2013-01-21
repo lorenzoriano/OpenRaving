@@ -159,12 +159,8 @@
 
 
 (:goal (and 
-;       	    (At random_object21 table4) (At random_object31 table4)
-;	    (At random_object11 table4) 
-	    (ontray random_object11)
-	    (ontray random_object21)
-	    (ontray random_object31)
-
+       	    (At random_object21 table4) (At random_object31 table4)
+	    (At random_object11 table4) 
        )
 )
 

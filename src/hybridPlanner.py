@@ -61,12 +61,15 @@ def execCmd(cmd,  successStr, pollTime = 2):
 
 def runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile):
     ffCmdLine = ff + " -o " + pddlDomainFile +" -f " + pddlProblemFile
-    
+    for fileName in glob.glob(ffOutputFile):
+        os.remove(fileName)
+        
     retVal = execCmd(ffCmdLine, "found legal plan")
     if retVal ==-1:
         sys.exit(-1)
         
     tryIO(ffOutputFile, "write", retVal)
+    
     ffOutStr = OutputParser(ffOutputFile).getFFPlan()
     return ffOutStr, 1
 
