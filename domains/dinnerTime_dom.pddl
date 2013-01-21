@@ -38,7 +38,7 @@
  (:action pickTray
   :parameters(?lrobot ?tray ?trayloc)
   :precondition(and (RobotAt ?lrobot) (IsTray ?tray)
-  		    (forall (?o) (imply (Object ?o) (not (InGripper ?o))))
+  		    (forall (?o) (not (InGripper ?o)))
 		    (IsAccessPointFor ?lrobot ?trayloc)
 		    (At ?tray ?trayloc)
 		    (not (Heavy ?tray)))
@@ -109,7 +109,7 @@
      :parameters(?o1 ?l1 ?l2)
      :precondition(and (Object ?o1) (Location ?l1) (Location ?l2) (At  ?o1 ?l1) 
      		       (RobotAt ?l2) (IsGP ?l2 ?o1)
-		       (forall (?o) (imply (Object ?o) (not (InGripper ?o))) ) 
+		       (forall (?o) (not (InGripper ?o)))  
 		       (forall (?o) (imply (Object ?o) 
 		       	       	    (not (Obstructs ?l2 ?o ?o1)) ))
 		       )
