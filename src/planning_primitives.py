@@ -107,6 +107,10 @@ class Executor(object):
         utils.pr2_tuck_arm(self.robot)
     
     def putdown(self, obj_name, table_name, _unused1):
+        if table_name.startswith("dest_"):
+            #use dictionary to find the right location, this is not a table!!!
+            raise NotImplementedError("Work in progress")
+        
         print "Putting down object %s on %s" %(obj_name, table_name)
         table = self.env.GetKinBody(table_name)        
         if table is None:
