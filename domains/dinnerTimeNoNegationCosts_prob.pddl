@@ -128,24 +128,62 @@
 (IsGP gp_random_object31 random_object31)
 (IsGP gp_random_object32 random_object32)
 
+(Smaller random_object11 random_object12)
+(Smaller random_object11 random_object21)
+(Smaller random_object11 random_object22)
+(Smaller random_object11 random_object31)
+(Smaller random_object11 random_object32)
+
+(Smaller random_object12 random_object11)
+(Smaller random_object12 random_object21)
+(Smaller random_object12 random_object22)
+(Smaller random_object12 random_object31)
+(Smaller random_object12 random_object32)
+
+(Smaller random_object21 random_object12)
+(Smaller random_object21 random_object11)
+(Smaller random_object21 random_object22)
+(Smaller random_object21 random_object31)
+(Smaller random_object21 random_object32)
+
+(Smaller random_object22 random_object12)
+(Smaller random_object22 random_object21)
+(Smaller random_object22 random_object11)
+(Smaller random_object22 random_object31)
+(Smaller random_object22 random_object32)
+
+(Smaller random_object31 random_object12)
+(Smaller random_object31 random_object21)
+(Smaller random_object31 random_object22)
+(Smaller random_object31 random_object11)
+(Smaller random_object31 random_object32)
+
+(Smaller random_object32 random_object12)
+(Smaller random_object32 random_object21)
+(Smaller random_object32 random_object22)
+(Smaller random_object32 random_object31)
+(Smaller random_object32 random_object11)
+
+(Smaller random_object11 none)
+(Smaller random_object21 none)
+(Smaller  random_object31 none)
+(Smaller  random_object12 none)
+(Smaller  random_object22 none)
+(Smaller  random_object32 none)
+
 (Topmost None tray)
 )
 
-;(:goal (and 
-;       	    (InGripper random_object22)
-;      	    (OnTray random_object22)
-;      	    (OnTray random_object12) 
-;           (OnTray random_object32)(InGripper tray)
-;	    (RobotAt blf_table1)
-;	    )
-;)
+(:goal (and 
+      	    (OnTray random_object21)
+      	    (OnTray random_object11) 
+            (OnTray random_object31)
+	    (Ingripper tray)
+	    (RobotAt blf_trayLoc1)
+	    )
+)
 
-(:goal (and (At random_object12 table1)(At random_object11 table1)
-       	    (At random_object22 table1)(At random_object21 table1)
-       	    (At random_object32 table1)(At random_object31 table1)
-       	    
-       )
-)  
+  
 (:metric minimize (total-cost))
 )
 
