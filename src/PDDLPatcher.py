@@ -51,8 +51,14 @@ class PDDLPatcher:
         self.patchWithFFOutput(ffOutputFile, stateNum)
         self.patchWithProps(factsFromContinuous)
     
+    
+    def forgetLearnedFactsAbout(self, symbol):
+        '''symbol can be a predicate like obstructs '''
+        self.initFileMgr.purgeFactsWithSymbol(symbol)
+
 
     def patchWithNewInterpretation(self, symbol, factsFromContinuous):
+        '''symbol can be a predicate like obstructs '''
         self.initFileMgr.purgeFactsWithSymbol(symbol)
         self.patchWithProps(factsFromContinuous)
 

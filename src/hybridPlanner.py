@@ -7,7 +7,7 @@ import StringIO
 import glob
 totalExecTime = 0
 
-def execCmd(cmd,  successStr, pollTime = 2):
+def execCmd(cmd,  successStr, outputFname, pollTime = 2):
     ''' A generic utility for executing a command. 
     Dumpfile stores stdout and stderr'''
     initTime = time.time()
@@ -16,16 +16,18 @@ def execCmd(cmd,  successStr, pollTime = 2):
     ## Using subprocess.call so that all the messages from the planner
     ## can be captured and parsed for the string "Solution found!"
 
-    #dumpF = open(dumpFile,  "w")
-    #p = subprocess.Popen([cmd], shell = True, stdout=dumpF, stderr=dumpF)
+    dumpF = open(outputFname,  "w")
+    p = subprocess.Popen([cmd], shell = True, stdout=dumpF, stderr=dumpF)
     startTime = time.time()
-    p = subprocess.Popen([cmd], shell = True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #p = subprocess.Popen([cmd], shell = True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
     while p.poll() == None:
         time.sleep(pollTime)
-        if time.time() - startTime >10:
-            ans = raw_input("Still running. Continue (c), Restart (r), Quit(q)? ")
-            startTime = time.time()
+        if time.time() - startTime >350:
+            #ans = raw_input("Still running. Continue (c), Restart (r), Quit(q)? ")
+            ans = "q"
+	    print "Killing process" 
+	    startTime = time.time()
             if ans.strip() == "q":
                 os.kill(p.pid+1,  9)
                 sys.exit(-1)
@@ -37,14 +39,14 @@ def execCmd(cmd,  successStr, pollTime = 2):
             else:
                 print "Unrecognized response. Continuing."
 
-    #dumpF.close()
-    #time.sleep(5)
+    dumpF.close()
+    time.sleep(5)
     endTime = time.time()
 
-    #dumpF = open(dumpFile, "r")
-    #msg = dumpF.read()
-    out, err = p.communicate()
-    msg = out+err
+    dumpF = open(outputFname, "r")
+    msg = dumpF.read()
+    #out, err = p.communicate()
+    #msg = out+err
     
     print "\nPlanning time: {0}".format(endTime-initTime)
     global totalExecTime
@@ -64,18 +66,18 @@ def runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile):
     for fileName in glob.glob(ffOutputFile):
         os.remove(fileName)
         
-    retVal = execCmd(ffCmdLine, "found legal plan")
+    retVal = execCmd(ffCmdLine, "found legal plan", ffOutputFile)
     if retVal ==-1:
-        sys.exit(-1)
+        return -1,-1
         
-    tryIO(ffOutputFile, "write", retVal)
+    #tryIO(ffOutputFile, "write", retVal)
     
     ffOutStr = OutputParser(ffOutputFile).getFFPlan()
     return ffOutStr, 1
 
 
 def runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFName="fdOutput", \
-                     pollTime=5, planQuality=2, TimeLimit=350):
+                     pollTime=10, planQuality=1, TimeLimit=350):
     '''fdOutputFName.X only gets the output plan. messages go to fdOutputFName '''
     fdCmdLine = fd + " " + pddlDomainFile +"  " + pddlProblemFile \
                          + " "+ fdOutputFName
@@ -111,6 +113,7 @@ def runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFName="fdOutput", \
     else:
         print "Failure... Planner message:"
         print msg
+        return -1,-1
 
     tryIO(fdOutputFName, "write", msg)
 
@@ -131,9 +134,13 @@ def runPlanner(pddlDomainFile, pddlProblemFile, outputFname, plannerName="ff"):
     plannerOutput = ""
     if plannerName == "ff":
         planStr, planCount = runPlannerFF(pddlDomainFile, pddlProblemFile, outputFname)
+        if planStr == -1:
+            return -1,-1,-1
     elif plannerName == "fd":
         fdPlanStr, plannerOutput, planCount = runPlannerFD(pddlDomainFile, \
                                                            pddlProblemFile, outputFname)
+        if fdPlanStr == -1:
+            return -1, -1, -1
         # modify planStr to add line numbers etc.
         planLines = fdPlanStr.replace("(", "").replace(")","").split("\n")
         for lineNum in range(0,len(planLines)):
@@ -171,16 +178,35 @@ def updateInitFile(pddlProblemFile, iteration, plannerOutFname, \
 def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, planner = "ff"):
     iteration = 0
     ex = planning_primitives.initOpenRave(viewer)
+    cacheClearCount = 0
     while True:
         iteration += 1
         plannerOutFname = pddlProblemFile+ ".out"
         planCount = 0
         strPlanFileH, plannerOutStr, planCount = runPlanner(pddlDomainFile, pddlProblemFile, plannerOutFname, planner)
-    
+        prevPDDLFile = pddlProblemFile
+        pddlProblemFile = initialProblemFile.replace(".pddl", repr(iteration) + ".pddl")
+        
+        reinterpret = "y"
+        if strPlanFileH ==-1:
+            reinterpret = raw_input("Planner failed. Reinterpret (y/n)?")
+            if reinterpret != "y":
+                print "Quitting"
+                sys.exit(-1)
+            myPatcher.forgetLearnedFactsAbout("obstructs")
+            myPatcher.writeCurrentInitState(pddlProblemFile)
+            planning_primitives.clearGPCache(ex)
+            cacheClearCount += 1
+            continue
+
         try:
             planning_primitives.test(strPlanFileH, ex)
             print "Success. Quitting."
             print "Total planning time: {0}".format(totalExecTime)
+            print "Replan count: "+ repr(iteration)
+            print "Cache clearing count: "+ repr(cacheClearCount)
+            obsCount = tryIO(prevPDDLFile, "read").count("obstructs")
+            print "Number of obstructions handled: "+ repr(obsCount)
             sys.exit(0)
         except planning_primitives.ExecutingException, e:
             errorStr = e.pddl_error_info
@@ -195,7 +221,6 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, planner = "ff"):
             raw_input("Press return to continue")
         
             
-        pddlProblemFile = initialProblemFile.replace(".pddl", repr(iteration) + ".pddl")
         updateInitFile(pddlProblemFile, iteration, plannerOutFname, \
                        plannerOutStr, errorStr, planCount, planner)
         print
