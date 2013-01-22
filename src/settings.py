@@ -20,7 +20,7 @@ if initialProblemFile == path:
     #for ff, dinnertime:
     #initialProblemFile = path + "dinnerTime_prob.pddl"
     #initialProblemFile = path + "dinnerTimeNoNegation_prob.pddl"
-    initialProblemFile = path + "dinnerTimeNoNegationCosts_prob.pddl"
+    initialProblemFile = path + "dinnerTimeNoNegationCostsTargets_prob.pddl"
 
 
 collision_free_grasping_samples = 500

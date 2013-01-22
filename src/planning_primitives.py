@@ -54,7 +54,7 @@ class Executor(object):
                 raw_input("Press return to continue")
             else:
                 print msg
-                time.sleep(2.0)
+                time.sleep(0.5)
                 #raw_input(msg + "... [press return]")
     
     def moveto(self, _unused1, pose):
@@ -268,7 +268,7 @@ class Executor(object):
         print "Back to rest"
         utils.pr2_tuck_arm(self.robot)
         print "The tray now has: ", self.tray_stack
-        self.pause()
+        #self.pause()
     
     def picktray(self, unused1, tray_name, unused2):
         """Grabs the tray and all the items on it
@@ -293,7 +293,7 @@ class Executor(object):
         for obj in self.tray_stack:
             self.robot.Grab(obj)
         
-        self.pause()
+        #self.pause()
     
     def putdowntray(self, unused1, tray_name, tray_loc):
         """Move the robot to the tray goal location and releases the tray        
@@ -316,7 +316,7 @@ class Executor(object):
             self.robot.Release(obj)
         self.tray_stack = []
         utils.pr2_tuck_arm(self.robot)
-        self.pause()
+        #self.pause()
     
     def pickfromtray(self, unused1, tray_name, obj_name, unused2, unused3):
         tray = self.env.GetKinBody(tray_name)

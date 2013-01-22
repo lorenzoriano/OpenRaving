@@ -218,7 +218,8 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, planner = "ff"):
         print "Got facts:"
         print errorStr
         if viewer:
-            raw_input("Press return to continue")
+            #raw_input("Press return to continue")
+            time.sleep(0.5)
         
             
         updateInitFile(pddlProblemFile, iteration, plannerOutFname, \
@@ -242,7 +243,7 @@ def main(argv):
             viewer = True
 
             
-    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer, planner="ff")
+    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer, planner="fd")
 
 
 if __name__ == "__main__":
