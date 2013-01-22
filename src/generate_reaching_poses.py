@@ -226,6 +226,7 @@ def get_collision_free_ik_pose(robot,
     
     Parameters:
     robot: an OpenRave robot instance
+    ik_pose: a 4x4 matrix with the desired 6D pose
     max_trials: how many attempts before giving up
     use_general_grasps: f True, don't calculate actual grasp points, but use
      a pre-generated list. It is much faster if a grasping model has not been
@@ -275,7 +276,7 @@ def get_collision_free_ik_pose(robot,
                 continue
 
     if (sol is None) or collision:
-        e = GraspingPoseError("No collision free grasping pose found within %d steps" % max_trials)    
+        e = GraspingPoseError("No collision free IK pose found within %d steps" % max_trials)    
         raise e
     else:
         return (robot_pose, sol, torso_angle)
