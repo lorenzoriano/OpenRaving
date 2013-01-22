@@ -112,21 +112,48 @@ class Executor(object):
         utils.pr2_tuck_arm(self.robot)
     
     def putdown(self, obj_name, table_name, _unused1):
+        
         print "Putting down object %s on %s" %(obj_name, table_name)
-        table = self.env.GetKinBody(table_name)        
-        if table is None:
-            raise ValueError("Object %s does not exist" % table_name)
         obj = self.env.GetKinBody(obj_name)
         if obj is None:
-            raise ValueError("Object %s does not exist" % obj_name)        
+            raise ValueError("Object %s does not exist" % obj_name)
         
-        try:
-            pose, sol, torso_angle = generate_reaching_poses.get_collision_free_surface_pose(
-                                                                                      self.robot, 
-                                                                                      table,
-                                                                                      )
-        except generate_reaching_poses.GraspingPoseError:
-            raise ExecutingException("Putdown has problems!")
+        if table_name.startswith("dest_"):
+            #this is a fixed location!!!
+            T = getattr(tray_world, table_name, None)            
+            if T is None:
+                raise ValueError("The location %s is unknown! check spelling?" % table_name)
+            T = T.copy()
+            #put the gripper facing down
+            gripper_angle = (np.pi, 0., 0) #just got this from trial and test
+            rot_mat = openravepy.rotationMatrixFromAxisAngle(gripper_angle)            
+            T[:3,:3] = rot_mat            
+            T[2, 3] += 0.03
+            
+            try:
+                (pose,
+                 sol,
+                 torso_angle) = generate_reaching_poses.get_collision_free_ik_pose(
+                     self.robot,
+                     T,
+                     only_reachable=False,
+                     max_trials =1000
+                 )
+            except generate_reaching_poses.GraspingPoseError:
+                raise ExecutingException("Putting down on location has problems!")            
+        
+        else:           
+            table = self.env.GetKinBody(table_name)        
+            if table is None:
+                raise ValueError("Object %s does not exist" % table_name)
+
+            try:
+                pose, sol, torso_angle = generate_reaching_poses.get_collision_free_surface_pose(
+                                                                                          self.robot, 
+                                                                                          table,
+                                                                                          )
+            except generate_reaching_poses.GraspingPoseError, e:
+                raise e
             
         self.pause("Moving to location")
         self.robot.SetTransform(pose)
@@ -142,12 +169,16 @@ class Executor(object):
         utils.pr2_tuck_arm(self.robot)
         
         #putting the object straight
-        T = obj.GetTransform()
-        rot_angle = (np.pi / 2., 0., 0) #got this from the model
-        rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
-        T[:3, :3] = rot_mat
-        _, _, _, _, z = utils.get_object_limits(table)
-        T[2, 3] = z
+        if table_name.startswith("dest_"):
+            print "Putting object in the right location"
+            T = getattr(tray_world, table_name, None)
+        else:
+            T = obj.GetTransform()
+            rot_angle = (np.pi / 2., 0., 0) #got this from the model
+            rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
+            T[:3, :3] = rot_mat
+            _, _, _, _, z = utils.get_object_limits(table)
+            T[2, 3] = z
         
         obj.SetTransform(T)
         try:
@@ -155,7 +186,7 @@ class Executor(object):
         except KeyError:
             print "funny, object ", obj_name, " was not in cache.. something wrong here!"
             raw_input("Press return to continue")    
-        self.pause()
+        #self.pause()
         
     def find_gp(self, object_to_grasp) :
         """"Find a grasping pose

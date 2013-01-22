@@ -14,7 +14,7 @@ class SimpleNavigationPlanning:
         self.basemanip = openravepy.interfaces.BaseManipulation(self.robot)
         
     def performNavigationPlanning(self, goal, execute = True, 
-                                  draw_marker = False):
+                                  draw_marker = False, steplength = 0.1):
         goal = np.array(goal)
         if goal.ndim == 2:
             #assume a 4x4 transformation matrix
@@ -51,7 +51,7 @@ class SimpleNavigationPlanning:
         openravepy.RaveLogInfo("Planning to goal " + str(goal))
         res = self.basemanip.MoveActiveJoints(goal = goal,
                                            maxiter = 3000,
-                                           steplength = 0.1,
+                                           steplength = steplength,
                                            execute = execute,
                                            outputtrajobj = True
                                            ) 
