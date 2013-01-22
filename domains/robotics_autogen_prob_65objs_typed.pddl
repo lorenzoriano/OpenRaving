@@ -74,8 +74,6 @@ table6 blf_table6 robotInitLoc - location
 (At random_object61 loc_random_object61)
 (At random_object62 loc_random_object62)
 (At random_object63 loc_random_object63)
-(At random_object64 loc_random_object64)
-(At random_object65 loc_random_object65)
 (RobotAt robotInitLoc)
 
 (IsAccessPointFor blf_table6 table6)
@@ -145,8 +143,6 @@ table6 blf_table6 robotInitLoc - location
 (IsGP gp_random_object61 random_object61)
 (IsGP gp_random_object62 random_object62)
 (IsGP gp_random_object63 random_object63)
-(IsGP gp_random_object64 random_object64)
-(IsGP gp_random_object65 random_object65)
 (empty gripper)
 )
 
