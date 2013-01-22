@@ -42,6 +42,11 @@ class Executor(object):
             robot,iktype=openravepy.IkParameterization.Type.Transform6D)    
         if not ikmodel.load():
             ikmodel.autogenerate()            
+    
+
+    def clear_gp_cache(self):
+        self.grasping_locations_cache = {}
+
 
     def pause(self, msg = None):
         if self.viewMode:
@@ -467,6 +472,7 @@ class PlanParser(object):
                                                           msg )            
         else:
             print "Don't know how to handle this problem!"
+
             
 def initOpenRave(viewer = False):
     env = openravepy.Environment()
@@ -488,7 +494,10 @@ def test(planFName, ex):
         print "All ok"
     except ExecutingException, e:
         raise 
-    
+
+def clearGPCache(ex):
+    print "clearing gp cache"
+    ex.clear_gp_cache()
     
     
 if __name__ == "__main__":
