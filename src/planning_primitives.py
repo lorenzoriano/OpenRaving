@@ -70,7 +70,9 @@ class Executor(object):
         print "Ignore me!"
     def movetowithinr2(self, _unused1, unused2):
             print "ignore me !"    
-    def movetoacrossrooms(self, _unused1, unused2, unused):
+#    def movetoacrossrooms(self, _unused1, unused2, unused):
+#        print "ignore me !"    
+    def movetoacrossrooms(self, _unused1, unused2):
         print "ignore me !"    
     
     def grasp(self, obj_name, _unused1, _unused2):

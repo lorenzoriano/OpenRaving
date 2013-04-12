@@ -77,7 +77,7 @@ def runPlannerFF(pddlDomainFile, pddlProblemFile, ffOutputFile):
 
 
 def runPlannerFD(pddlDomainFile, pddlProblemFile, fdOutputFName="fdOutput", \
-                     pollTime=10, planQuality=1, TimeLimit=350):
+                     pollTime=30, planQuality=4, TimeLimit=10000):
     '''fdOutputFName.X only gets the output plan. messages go to fdOutputFName '''
     fdCmdLine = fd + " " + pddlDomainFile +"  " + pddlProblemFile \
                          + " "+ fdOutputFName
@@ -189,7 +189,9 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, planner = "ff"):
         
         reinterpret = "y"
         if strPlanFileH ==-1:
-            reinterpret = raw_input("Planner failed. Reinterpret (y/n)?")
+            #reinterpret = raw_input("Planner failed. Reinterpret (y/n)?")
+            if cacheClearCount == 1:
+                reinterpret == "n"
             if reinterpret != "y":
                 print "Quitting"
                 sys.exit(-1)
@@ -243,13 +245,13 @@ def main(argv):
             viewer = True
 
             
-    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer, planner="fd")
+    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer, planner="ff")
 
 
 if __name__ == "__main__":
     myPatcher = PDDLPatcher(initialProblemFile)
     main(sys.argv)
-    pddlDomainFile = '../domains/dinnerTimeNoNegationCosts_dom.pddl'
+    #pddlDomainFile = '../domains/dinnerTimeNoNegationCosts_dom.pddl'
     #pddlProblemFile = '../domains/dinnerTimeNoNegationCosts_prob.pddl'
     #plan, fdOutStr = runPlannerFD(pddlDomainFile, pddlProblemFile)
     #op = OutputParser("")
