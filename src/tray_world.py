@@ -20,7 +20,7 @@ def can_stack(stacktop, newobj):
     stacktop = recognize_random_object(stacktop)
     newobj = recognize_random_object(newobj)
     
-    if stacktop == "mug" and newobj != "mug":
+    if stacktop == "mug":
         return False
     elif stacktop == "plate" :
         return True
