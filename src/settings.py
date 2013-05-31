@@ -24,6 +24,6 @@ if initialProblemFile == path:
 
 
 collision_free_grasping_samples = 500
-occluding_objects_grasping_samples = 300
+occluding_objects_grasping_samples = 500
 envFile = "boxes50.dae"
 #envFile = "tray_world.dae"
