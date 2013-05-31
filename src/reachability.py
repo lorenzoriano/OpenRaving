@@ -6,7 +6,7 @@ import time
 def get_occluding_objects_names(robot, 
                                 obj,
                                 body_filter,
-                                num_trials = 300,
+                                num_trials = 0,
                                 just_one_attempt = False,
                                 return_pose = False):
     """
@@ -48,7 +48,7 @@ def get_occluding_objects_names(robot,
     
 def get_occluding_objects(robot, 
                              object_to_grasp, 
-                             max_trials = 100,
+                             max_trials = 0,
                               just_one_attempt = False,
                               return_pose = False
                              ):

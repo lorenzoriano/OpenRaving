@@ -175,9 +175,9 @@ def updateInitFile(pddlProblemFile, iteration, plannerOutFname, \
     myPatcher.writeCurrentInitState(pddlProblemFile)
 
 
-def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, planner = "ff"):
+def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, envFile, planner = "ff"):
     iteration = 0
-    ex = planning_primitives.initOpenRave(viewer)
+    ex = planning_primitives.initOpenRave(viewer, envFile)
     cacheClearCount = 0
     while True:
         iteration += 1
@@ -245,7 +245,7 @@ def main(argv):
             viewer = True
 
             
-    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer, planner="ff")
+    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer, envFile, planner="ff")
 
 
 if __name__ == "__main__":

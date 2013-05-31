@@ -7,6 +7,8 @@ import time
 import tray_world
 import numpy as np
 from settings import *
+import sys
+import pdb
 
 class ExecutingException(Exception):
     """This is a general exception that returns information on failure for an execution step.
@@ -507,11 +509,11 @@ class PlanParser(object):
             print "Don't know how to handle this problem!"
 
             
-def initOpenRave(viewer = False):
+def initOpenRave(viewer = False, envFile = None):
     env = openravepy.Environment()
     if viewer: 
         env.SetViewer('qtcoin')
-    global envFile
+
     env.Load(envFile);
     robot = env.GetRobots()[0];
     manip = robot.SetActiveManipulator('rightarm')
@@ -534,7 +536,8 @@ def clearGPCache(ex):
     
     
 if __name__ == "__main__":
-    initOpenRave()
+    global envFile
+    initOpenRave(envFile)
     try:
         test("wrongplan.txt")
     except ExecutingException, e:
