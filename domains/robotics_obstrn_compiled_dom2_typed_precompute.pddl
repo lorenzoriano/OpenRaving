@@ -5,10 +5,10 @@
   (:predicates
 	   (At ?obj - object ?loc - location)
            (RobotAt ?loc - location)
-	   (InGripper ?obj -object)
+	   (InGripper ?obj - object)
 	   (IsAccessPointFor ?loc - location ?targetLocation - location)
-	   (Obstructs ?loc - location ?obj -object ?obj - object)
-	   (IsGP ?loc - location ?obj -object)
+	   (Obstructs ?loc - location ?obj - object ?obj - object)
+	   (IsGP ?loc - location ?obj - object)
 	   (empty ?gripper)
 
   )
