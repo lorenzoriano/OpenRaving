@@ -113,7 +113,7 @@
   (:action moveToAcrossRooms
      :parameters(?l1 ?l2 ?o)
      :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
-     		   	(Ingripper ?o) (Istray ?o)
+     		   	;(Ingripper ?o) (Istray ?o)
      		   	)
      :effect (and (not (RobotAt ?l1)) (RobotAt ?l2)
      	     	  (increase (total-cost) 1000))
