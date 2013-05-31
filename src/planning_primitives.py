@@ -56,8 +56,8 @@ class Executor(object):
                 raw_input("Press return to continue")
             else:
                 print msg
-                time.sleep(0.5)
-                #raw_input(msg + "... [press return]")
+                #time.sleep(0.5)
+                raw_input(msg + "... [press return]")
     
     def moveto(self, _unused1, pose):
         if type(pose) is str:
