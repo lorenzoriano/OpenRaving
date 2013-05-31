@@ -111,7 +111,8 @@
 
 
   (:action moveToAcrossRooms
-     :parameters(?l1 ?l2 ?o)
+;     :parameters(?l1 ?l2 ?o)
+     :parameters(?l1 ?l2)
      :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
      		   	;(Ingripper ?o) (Istray ?o)
      		   	)

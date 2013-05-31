@@ -34,3 +34,4 @@ pip-log.txt
 robotics_autogen_prob*
 planners/FF-v2.3/ff
 *pddl.c
+*.pddl.soln
