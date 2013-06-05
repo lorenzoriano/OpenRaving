@@ -228,6 +228,11 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, envFile, planner 
                        plannerOutStr, errorStr, planCount, planner)
         print
 
+def plan(detector_and_cluster_map, envFile, viewer=True):
+    planning_primitives.detector_and_cluster_map = detector_and_cluster_map
+    iterativePlanAuto(pddlDomainFile, initialProblemFile,
+                      viewer, envFile, planner="ff")
+
 def main(argv):
     iteration = 0
     pddlProblemFile = initialProblemFile
