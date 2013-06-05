@@ -129,6 +129,9 @@ class Executor(object):
                               'right_arm',
                               desired_grasps=desired_grasps)
 
+        # update openrave
+        self.pr2robot.update_rave()
+
         self.robot.Grab(obj)
     
     def putdown(self, obj_name, table_name, _unused1):
@@ -455,9 +458,6 @@ class PlanParser(object):
     def execute(self, timestep = 0.5):
         print "Starting..."
         #time.sleep(timestep)
-
-        # update openrave
-        self.executor.pr2robot.update_rave()
         
         for lineno, instruction in enumerate(self.parsing_result):
             action_name =  instruction["name"] + "(" + ", ".join( instruction['args']) + ")"
@@ -469,9 +469,6 @@ class PlanParser(object):
         
             try:
                 method(*args)
-
-                # update openrave
-                self.executor.pr2robot.update_rave()
             except ExecutingException, e:
                 e.line_number = lineno
                 self.handle_error(e)
