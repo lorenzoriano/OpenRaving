@@ -10,6 +10,12 @@ from settings import *
 import sys
 import pdb
 
+import object_detector
+import grasp_generator
+import object_pickup
+
+detector_and_cluster_map = None
+
 class ExecutingException(Exception):
     """This is a general exception that returns information on failure for an execution step.
     """
@@ -102,6 +108,24 @@ class Executor(object):
             print "Object %s already cached" %  obj_name
             pose, sol, torso_angle = cached_value
         
+        detector, cluster_map = detector_and_cluster_map
+        index = cluster_map[obj_name]
+
+        # generating grasps
+        box_msg = detector.detect_bounding_box(detector.last_detection_msg.detection.clusters[index])
+        desired_grasps = grasp_generator.generate_grasps(box_msg)
+        grasp_generator.draw_grasps(desired_grasps)
+
+        # pickup
+        grabber = object_pickup.Grabber()
+        processing_reply = detector.call_collision_map_processing(detector.last_detection_msg)
+        grabber.pickup_object(processing_reply.graspable_objects[index],
+                              processing_reply.collision_object_names[index],
+                              processing_reply.collision_support_surface_name,
+                              'right_arm',
+                              desired_grasps=desired_grasps)
+
+        """
         self.pause("Moving to location")
         self.robot.SetTransform(pose)
         
@@ -114,6 +138,7 @@ class Executor(object):
         self.pause("Grasping object")
         self.robot.Grab(obj)
         utils.pr2_tuck_arm(self.robot)
+        """
     
     def putdown(self, obj_name, table_name, _unused1):
         
