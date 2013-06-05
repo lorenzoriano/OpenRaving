@@ -401,7 +401,7 @@ def get_torso_surface_pose(robot, obj,
         return (sol, torso_angle)
 
 def get_collision_free_surface_pose(robot, obj, 
-                                         max_trials = 100,
+                                         max_trials = 500,
                                          use_general_grasps = True):
     
     env = robot.GetEnv()

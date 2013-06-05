@@ -128,6 +128,8 @@ class Executor(object):
                               processing_reply.collision_support_surface_name,
                               'right_arm',
                               desired_grasps=desired_grasps)
+
+        self.robot.Grab(obj)
     
     def putdown(self, obj_name, table_name, _unused1):
         
