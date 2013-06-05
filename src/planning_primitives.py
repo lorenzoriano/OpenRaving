@@ -10,7 +10,8 @@ from settings import *
 import sys
 import pdb
 
-import object_detector
+from pr2model import PR2Robot
+
 import grasp_generator
 import object_pickup
 
@@ -37,6 +38,9 @@ class Executor(object):
         self.grasping_locations_cache = {}
         self.viewMode = viewer
         self.tray_stack = []
+
+        self.pr2robot = PR2Robot(self.env)
+        self.pr2robot.robot = self.robot
         
         #loading the IK models
         utils.pr2_tuck_arm(robot)
@@ -124,21 +128,6 @@ class Executor(object):
                               processing_reply.collision_support_surface_name,
                               'right_arm',
                               desired_grasps=desired_grasps)
-
-        """
-        self.pause("Moving to location")
-        self.robot.SetTransform(pose)
-        
-        self.pause("Moving arm")
-        self.robot.SetDOFValues([torso_angle],
-                                [self.robot.GetJointIndex('torso_lift_joint')])        
-        self.robot.SetDOFValues(sol,
-                                self.robot.GetActiveManipulator().GetArmIndices())
-        
-        self.pause("Grasping object")
-        self.robot.Grab(obj)
-        utils.pr2_tuck_arm(self.robot)
-        """
     
     def putdown(self, obj_name, table_name, _unused1):
         
@@ -464,6 +453,9 @@ class PlanParser(object):
     def execute(self, timestep = 0.5):
         print "Starting..."
         #time.sleep(timestep)
+
+        # update openrave
+        self.executor.pr2robot.update_rave()
         
         for lineno, instruction in enumerate(self.parsing_result):
             action_name =  instruction["name"] + "(" + ", ".join( instruction['args']) + ")"
@@ -475,6 +467,9 @@ class PlanParser(object):
         
             try:
                 method(*args)
+
+                # update openrave
+                self.executor.pr2robot.update_rave()
             except ExecutingException, e:
                 e.line_number = lineno
                 self.handle_error(e)
