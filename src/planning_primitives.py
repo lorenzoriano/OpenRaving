@@ -13,7 +13,7 @@ import numpy
 
 use_ros = False
 
-if use_ros:
+try:
     from tf import transformations
     from geometry_msgs.msg import PoseStamped
 
@@ -25,6 +25,8 @@ if use_ros:
     import object_pickup
 
     detector_and_cluster_map = None
+except:
+    print "Warning: ROS imports failed. Okay if not using ROS."
 
 class ExecutingException(Exception):
     """This is a general exception that returns information on failure for an execution step.
