@@ -100,6 +100,7 @@ class Executor(object):
         print "ignore me !"    
     
     def grasp(self, obj_name, _unused1, _unused2):
+        # NOTICE: Manual selection of objects is used for debugging purposes only
         num = raw_input("Enter an object number, or press Enter to continue: ")
         if num.isdigit():
             obj_name = 'object{}'.format(num)
