@@ -71,7 +71,7 @@ def generate_grasping_pose(robot,
             gmodel.autogenerate(__Options())
 
     openravepy.raveLogInfo("Generating grasps")
-    validgrasps, _ = gmodel.computeValidGrasps(checkcollision=True, 
+    validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
                                                checkik = checkik,
                                                checkgrasper = False)
 
@@ -138,12 +138,10 @@ def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = F
     """
     
     env.Remove(obj_to_grasp)
-    
     if len(grasping_poses) == 0:
         return None
     if only_reachable:
-        #options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions 
-        pass
+        options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
     else:
 #        options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions |
 #                   openravepy.IkFilterOptions.CheckEnvCollisions)
@@ -151,9 +149,8 @@ def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = F
 
 
     for pose in grasping_poses:
-        sol = manip.FindIKSolution(pose, 
-                                   options
-                                   )
+        sol = manip.FindIKSolution(pose, options)
+
         if sol is not None:
             env.AddKinBody(obj_to_grasp)
             return sol
@@ -208,9 +205,9 @@ def get_collision_free_grasping_pose(robot,
         while ((collision) or (not isreachable)) and (num_trial < max_trials):
             num_trial +=1
             torso_angle = move_random_torso(robot, min_torso, max_torso)
-            #robot_pose = generate_random_pos(robot, object_to_grasp)
+            robot_pose = generate_random_pos(robot, object_to_grasp)
             
-            #robot.SetTransform(robot_pose)
+            robot.SetTransform(robot_pose)
             report = openravepy.CollisionReport()
             collision = env.CheckCollision(robot, report=report)
             

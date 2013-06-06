@@ -28,6 +28,6 @@ table6  blf_table6 robotInitLoc - location
 
 
 
-(:goal (and (At object1 table6)))
+(:goal (and (At object5 table6)))
 
 )
