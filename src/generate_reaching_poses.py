@@ -71,9 +71,15 @@ def generate_grasping_pose(robot,
             gmodel.autogenerate(__Options())
 
     openravepy.raveLogInfo("Generating grasps")
-    validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
+    validgrasps, _ = gmodel.computeValidGrasps(checkcollision=True, 
                                                checkik = checkik,
                                                checkgrasper = False)
+
+    """
+    for grasp in validgrasps:
+        gmodel.showgrasp(grasp)
+    """
+
     openravepy.raveLogInfo("Number of valid grasps: %d" % len(validgrasps))
     return [gmodel.getGlobalGraspTransform(grasp) for grasp in validgrasps]
 
