@@ -122,7 +122,7 @@ def generate_random_pos(robot, obj_to_grasp = None):
     return T
 
 
-def check_reachable(manip, grasping_poses, only_reachable = False):
+def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = False):
     """Check if the robot can reach at least one pose 
 
     Parameters:
@@ -131,20 +131,28 @@ def check_reachable(manip, grasping_poses, only_reachable = False):
     only_reachable: do not check for collisions
     """
     
+    env.Remove(obj_to_grasp)
+    
+    
     if len(grasping_poses) == 0:
         return None
     if only_reachable:
-        options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions 
-                   )
+        #options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions 
+        pass
     else:
-        options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions |
-                   openravepy.IkFilterOptions.CheckEnvCollisions)
+#        options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions |
+#                   openravepy.IkFilterOptions.CheckEnvCollisions)
+        options = (openravepy.IkFilterOptions.CheckEnvCollisions)
+
+
     for pose in grasping_poses:
         sol = manip.FindIKSolution(pose, 
                                    options
                                    )
         if sol is not None:
+            env.AddKinBody(obj_to_grasp)
             return sol
+    env.AddKinBody(obj_to_grasp)
     return None
 
 def get_collision_free_grasping_pose(robot,
