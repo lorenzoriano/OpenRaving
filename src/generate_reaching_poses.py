@@ -133,7 +133,6 @@ def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = F
     
     env.Remove(obj_to_grasp)
     
-    
     if len(grasping_poses) == 0:
         return None
     if only_reachable:
