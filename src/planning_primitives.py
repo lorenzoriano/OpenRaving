@@ -136,11 +136,16 @@ class Executor(object):
             # pickup
             grabber = object_pickup.Grabber()
             processing_reply = detector.call_collision_map_processing(detector.last_detection_msg)
-            grabber.pickup_object(processing_reply.graspable_objects[index],
-                                  processing_reply.collision_object_names[index],
-                                  processing_reply.collision_support_surface_name,
-                                  'right_arm',
-                                  desired_grasps=desired_grasps)
+            res = grabber.pickup_object(processing_reply.graspable_objects[index],
+                                        processing_reply.collision_object_names[index],
+                                        processing_reply.collision_support_surface_name,
+                                        'right_arm',
+                                        desired_grasps=desired_grasps)
+            if res is None:
+                e = ExecutingException("ROS pickup failed")
+                e.robot = self.robot
+                e.object_to_grasp = obj
+                raise e
 
             # update openrave
             self.pr2robot.update_rave()
@@ -207,7 +212,12 @@ class Executor(object):
             arm_mover = PR2MoveArm()
             p = (0.1, -0.8, 0.2)
             q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
-            arm_mover.move_right_arm(p, q, '/torso_lift_link', 10)
+            res = arm_mover.move_right_arm(p, q, '/torso_lift_link', 10)
+            if not res:
+                e = ExecutingException("ROS putdown failed")
+                e.robot = self.robot
+                e.object_to_grasp = obj
+                raise e
 
             # Drop object
             joint_mover = PR2JointMover()
@@ -561,7 +571,11 @@ class PlanParser(object):
                                              error.stacktop.GetName())
 
             error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number,
-                                                          msg )            
+                                                          msg )
+        elif 'ROS pickup' in error.problem:
+            print 'ROS pickup failed!'
+        elif 'ROS putdown' in error.problem:
+            print 'ROS putdown failed!'
         else:
             print "Don't know how to handle this problem!"
 
