@@ -25,4 +25,4 @@ if __name__=="__main__":
     env.Save(ENV_FILE_NAME)
 
     # run planner
-    hybridPlanner.plan(detector_and_cluster_map, ENV_FILE_NAME, True)
+    hybridPlanner.run_with_ros(detector_and_cluster_map, ENV_FILE_NAME, True)

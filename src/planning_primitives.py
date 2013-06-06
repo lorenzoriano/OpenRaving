@@ -11,17 +11,20 @@ import sys
 import pdb
 import numpy
 
-from tf import transformations
-from geometry_msgs.msg import PoseStamped
+use_ros = False
 
-from pr2model import PR2Robot
-from pr2_control_utilities.pr2_planning import PR2MoveArm
-from pr2_control_utilities.pr2_joint_mover import PR2JointMover
+if use_ros:
+    from tf import transformations
+    from geometry_msgs.msg import PoseStamped
 
-import grasp_generator
-import object_pickup
+    from pr2model import PR2Robot
+    from pr2_control_utilities.pr2_planning import PR2MoveArm
+    from pr2_control_utilities.pr2_joint_mover import PR2JointMover
 
-detector_and_cluster_map = None
+    import grasp_generator
+    import object_pickup
+
+    detector_and_cluster_map = None
 
 class ExecutingException(Exception):
     """This is a general exception that returns information on failure for an execution step.
@@ -45,8 +48,9 @@ class Executor(object):
         self.viewMode = viewer
         self.tray_stack = []
 
-        self.pr2robot = PR2Robot(self.env)
-        self.pr2robot.robot = self.robot
+        if use_ros:
+            self.pr2robot = PR2Robot(self.env)
+            self.pr2robot.robot = self.robot
         
         #loading the IK models
         utils.pr2_tuck_arm(robot)
@@ -118,25 +122,35 @@ class Executor(object):
             print "Object %s already cached" %  obj_name
             pose, sol, torso_angle = cached_value
         
-        detector, cluster_map = detector_and_cluster_map
-        index = cluster_map[obj_name]
+        if use_ros:
+            detector, cluster_map = detector_and_cluster_map
+            index = cluster_map[obj_name]
 
-        # generating grasps
-        box_msg = detector.detect_bounding_box(detector.last_detection_msg.detection.clusters[index])
-        desired_grasps = grasp_generator.generate_grasps(box_msg)
-        grasp_generator.draw_grasps(desired_grasps)
+            # generating grasps
+            box_msg = detector.detect_bounding_box(detector.last_detection_msg.detection.clusters[index])
+            desired_grasps = grasp_generator.generate_grasps(box_msg)
+            grasp_generator.draw_grasps(desired_grasps)
 
-        # pickup
-        grabber = object_pickup.Grabber()
-        processing_reply = detector.call_collision_map_processing(detector.last_detection_msg)
-        grabber.pickup_object(processing_reply.graspable_objects[index],
-                              processing_reply.collision_object_names[index],
-                              processing_reply.collision_support_surface_name,
-                              'right_arm',
-                              desired_grasps=desired_grasps)
+            # pickup
+            grabber = object_pickup.Grabber()
+            processing_reply = detector.call_collision_map_processing(detector.last_detection_msg)
+            grabber.pickup_object(processing_reply.graspable_objects[index],
+                                  processing_reply.collision_object_names[index],
+                                  processing_reply.collision_support_surface_name,
+                                  'right_arm',
+                                  desired_grasps=desired_grasps)
 
-        # update openrave
-        self.pr2robot.update_rave()
+            # update openrave
+            self.pr2robot.update_rave()
+        else:
+            self.pause("Moving to location")
+            self.robot.SetTransform(pose)
+            
+            self.pause("Moving arm")
+            self.robot.SetDOFValues([torso_angle],
+                                    [self.robot.GetJointIndex('torso_lift_joint')])        
+            self.robot.SetDOFValues(sol,
+                                    self.robot.GetActiveManipulator().GetArmIndices())
 
         self.robot.Grab(obj)
     
@@ -184,18 +198,28 @@ class Executor(object):
             except generate_reaching_poses.GraspingPoseError, e:
                 raise e
         
-        # Move arm to drop location
-        arm_mover = PR2MoveArm()
-        p = (0.1, -0.8, 0.2)
-        q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
-        arm_mover.move_right_arm(p, q, '/torso_lift_link', 10)
+        if use_ros:
+            # Move arm to drop location
+            arm_mover = PR2MoveArm()
+            p = (0.1, -0.8, 0.2)
+            q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
+            arm_mover.move_right_arm(p, q, '/torso_lift_link', 10)
 
-        # Drop object
-        joint_mover = PR2JointMover()
-        joint_mover.open_right_gripper(True)
+            # Drop object
+            joint_mover = PR2JointMover()
+            joint_mover.open_right_gripper(True)
 
-        # update openrave
-        self.pr2robot.update_rave()
+            # update openrave
+            self.pr2robot.update_rave()
+        else:
+            self.pause("Moving to location")
+            self.robot.SetTransform(pose)
+            
+            self.pause("Moving arm")
+            self.robot.SetDOFValues([torso_angle],
+                                    [self.robot.GetJointIndex('torso_lift_joint')])
+            self.robot.SetDOFValues(sol,
+                                    self.robot.GetActiveManipulator().GetArmIndices())
 
         self.robot.Release(obj)
         
