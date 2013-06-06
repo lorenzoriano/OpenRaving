@@ -105,9 +105,8 @@ def get_occluding_objects(robot,
                 #check if gripper pose is reachable from base pose
                 #use robot's base pose to transform precomputed
                 #gripper poses into the robot's frame of reference
-                sol = generate_reaching_poses.check_reachable(manip, 
-                                                           grasping_poses, 
-                                                              only_reachable = True)
+                sol = generate_reaching_poses.check_reachable(
+                    env, object_to_grasp, manip, grasping_poses, only_reachable = True)
                 if sol is None:
                     print "Trial {0} No sol from base pose to gripper pose".\
                         format(num_trial)
