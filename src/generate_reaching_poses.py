@@ -63,7 +63,7 @@ def generate_grasping_pose(robot,
     gmodel = openravepy.databases.grasping.GraspingModel(robot, obj_to_grasp)
     
     if use_general_grasps:
-        gmodel.grasps = utils.pre_grasps
+        gmodel.grasps = utils.side_pre_grasps
     
     else:
         if not gmodel.load():
