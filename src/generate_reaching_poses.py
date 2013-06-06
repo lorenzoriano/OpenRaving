@@ -208,9 +208,9 @@ def get_collision_free_grasping_pose(robot,
         while ((collision) or (not isreachable)) and (num_trial < max_trials):
             num_trial +=1
             torso_angle = move_random_torso(robot, min_torso, max_torso)
-            robot_pose = generate_random_pos(robot, object_to_grasp)
+            #robot_pose = generate_random_pos(robot, object_to_grasp)
             
-            robot.SetTransform(robot_pose) 
+            #robot.SetTransform(robot_pose)
             report = openravepy.CollisionReport()
             collision = env.CheckCollision(robot, report=report)
             
