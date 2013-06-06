@@ -37,7 +37,7 @@
 		     )
    :effect(and (not (InGripper ?obj1)) (OnTray ?obj1) (on ?obj1 ?obj2)
    	       (not (Topmost ?obj2 ?tray)) (Topmost ?obj1 ?tray) 
-	       (empty gripper) (increase (total-cost) 10)
+	       (empty gripper) (increase (total-cost) 0)
 )
  )	      
 
@@ -65,7 +65,7 @@
   :effect(and (InGripper ?obj) (nHeavy ?tray) (not (ontray ?obj))
   	      (not (Topmost ?obj ?tray)) (not (on ?obj ?obj2))
 	      (topmost ?obj2 ?tray) (not (empty gripper))
-	        	       	     	  (increase (total-cost) 10)
+	        	       	     	  (increase (total-cost) 0)
 
 	      )
 )
@@ -75,7 +75,7 @@
   :precondition (and (IsTray ?tray) (Location ?lrobot)
   		     (InGripper ?tray) (TrayLocation ?ltarget)
 		     (RobotAt ?lrobot) (IsAccessPointFor ?lrobot ?ltarget))
-  :effect (and (not (InGripper ?tray)) (At ?tray ?ltarget) (empty gripper)  	       	     	  (increase (total-cost) 10)
+  :effect (and (not (InGripper ?tray)) (At ?tray ?ltarget) (empty gripper)  	       	     	  (increase (total-cost) 0)
 )
  )
 
@@ -86,7 +86,7 @@
   		     (InGripper ?o1) (RobotAt  ?l2) (TempArea ?l1)
 		     (IsAccessPointFor ?l2 ?l1))
   :effect (and (not (InGripper ?o1)) (At ?o1 ?l1) (empty gripper)
-  	       	     	  (increase (total-cost) 10)
+  	       	     	  (increase (total-cost) 0)
 			  )
 			  
  )
@@ -97,7 +97,7 @@
      :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
      		   	(InRoom1 ?l1) (InRoom1 ?l2)
      		   	)
-     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2) (increase (total-cost) 10)
+     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2) (increase (total-cost) 0)
   ))
 
   (:action moveToWithinR2
@@ -105,19 +105,28 @@
      :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
      		   	(InRoom2 ?l1) (InRoom2 ?l2)
      		   	)
-     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2) (increase (total-cost) 10)
+     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2) (increase (total-cost) 0)
   ))
 
 
 
   (:action moveToAcrossRooms
-;     :parameters(?l1 ?l2 ?o)
      :parameters(?l1 ?l2)
      :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
-     		   	;(Ingripper ?o) (Istray ?o)
+     		   	(Ingripper ?o) 
      		   	)
      :effect (and (not (RobotAt ?l1)) (RobotAt ?l2)
-     	     	  (increase (total-cost) 1000))
+     	     	  (increase (total-cost) 10))
+  )
+
+  (:action moveToAcrossRoomsTray
+     :parameters(?l1 ?l2 ?o)
+     :precondition (and (Location ?l1) (Location ?l2) (RobotAt ?l1)
+     		   	(Ingripper ?o) 
+			(Istray ?o)
+     		   	)
+     :effect (and (not (RobotAt ?l1)) (RobotAt ?l2)
+     	     	  (increase (total-cost) 10))
   )
 
 
@@ -130,7 +139,7 @@
 		       (empty gripper)
 		       )
      :effect (and (InGripper ?o1) (not (At ?o1 ?l1)) (not (empty gripper))
-	       	       	     	  (increase (total-cost) 10)
+	       	       	     	  (increase (total-cost) 0)
 )
  )
 )
