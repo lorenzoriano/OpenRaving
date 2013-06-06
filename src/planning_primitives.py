@@ -177,6 +177,8 @@ class Executor(object):
                 (pose,
                  sol,
                  torso_angle) = generate_reaching_poses.get_collision_free_ik_pose(
+                     self.env,
+                     obj,
                      self.robot,
                      T,
                      only_reachable=False,
@@ -288,6 +290,8 @@ class Executor(object):
             (pose,
              sol,
              torso_angle) = generate_reaching_poses.get_collision_free_ik_pose(
+                 self.env,
+                 obj,
                  self.robot,
                  T,
              )
@@ -342,8 +346,8 @@ class Executor(object):
         tray_world.move_robot_base_infront_tray(self.robot, tray)
 
         self.pause("Grasping the tray")
-        tray_world.put_left_arm_over_tray(self.robot, tray)
-        tray_world.put_right_arm_over_tray(self.robot, tray)
+        tray_world.put_left_arm_over_tray(self.env, self.robot, tray)
+        tray_world.put_right_arm_over_tray(self.env, self.robot, tray)
         self.robot.Grab(tray)        
         for obj in self.tray_stack:
             self.robot.Grab(obj)

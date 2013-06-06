@@ -76,7 +76,7 @@ def put_right_arm_over_tray(robot, tray):
     T[:3,:3] = rot_mat
     T[:3,3] = [x,y,z]
     
-    sol = generate_reaching_poses.check_reachable(env, object_to_grasp, manip, [T], False)
+    sol = generate_reaching_poses.check_reachable(env, tray, manip, [T], False)
     if sol is not None:
         robot.SetDOFValues(sol, manip.GetArmIndices())
         #opening gripper
@@ -110,7 +110,7 @@ def put_left_arm_over_tray(robot, tray):
     T[:3,:3] = rot_mat
     T[:3,3] = [x,y,z]
     
-    sol = generate_reaching_poses.check_reachable(env, object_to_grasp, manip, [T], False)
+    sol = generate_reaching_poses.check_reachable(env, tray, manip, [T], False)
     if sol is not None:
         robot.SetDOFValues(sol, manip.GetArmIndices())
         #opening gripper
