@@ -246,9 +246,8 @@ def setupAndStart(pddlDomainFile, initialProblemFile,
     print "Using initial problem file " + editedProblemFile
     ORSetup = planning_primitives.initOpenRave(viewer, envFile)
     goalObject = raw_input("Enter object to pick up, or press return for default:")
-    editedProblemFile = pddlProblemFile
     if len(goalObject) > 0:
-        editedProblemFile = utils.setGoalObject(goalObject, pddlProblemFile)
+        editedProblemFile = utils.setGoalObject(goalObject, editedProblemFile)
         
     myPatcher = PDDLPatcher(editedProblemFile)
     iterativePlanAuto(myPatcher, ORSetup, pddlDomainFile, editedProblemFile, viewer, envFile, planner)

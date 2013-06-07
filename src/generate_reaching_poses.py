@@ -89,6 +89,7 @@ def generate_random_pos(robot, obj_to_grasp = None):
     """
     
     T = robot.GetTransform()
+    return T
     envmin, envmax = utils.get_environment_limits(robot.GetEnv(), robot)
     if obj_to_grasp is None:        
         max_x = envmax[0]
@@ -364,6 +365,7 @@ def get_torso_grasping_pose(robot,
         return (sol, torso_angle)
 
 def move_random_torso(robot, min_angle, max_angle, joint_index=[]):
+    return 0
     if joint_index == []:
         joint_index.append(robot.GetJointIndex('torso_lift_joint'))
     
