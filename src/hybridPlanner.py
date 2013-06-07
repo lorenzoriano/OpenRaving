@@ -8,7 +8,7 @@ import glob
 import utils
 
 totalExecTime = 0
-myPatcher = None
+#myPatcher = None
 
 def execCmd(cmd,  successStr, outputFname, pollTime = 2):
     ''' A generic utility for executing a command. 
@@ -159,7 +159,7 @@ def runPlanner(pddlDomainFile, pddlProblemFile, outputFname, plannerName="ff"):
     return strPlanFileH, plannerOutput, planCount
 
 
-def updateInitFile(pddlProblemFile, iteration, plannerOutFname, \
+def updateInitFile(myPatcher, pddlProblemFile, iteration, plannerOutFname, \
                    plannerOutStr, errorStr, planCount, planner = "ff"):
     errorLines = errorStr.lower().split("\n")
     failedActionNumber = int(errorLines[0].strip("linenumber: "))
@@ -178,7 +178,7 @@ def updateInitFile(pddlProblemFile, iteration, plannerOutFname, \
     myPatcher.writeCurrentInitState(pddlProblemFile)
 
 
-def iterativePlanAuto(ex, pddlDomainFile, pddlProblemFile, viewer, envFile, planner = "ff"):
+def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, envFile, planner = "ff"):
     iteration = 0
     
     cacheClearCount = 0
@@ -227,12 +227,11 @@ def iterativePlanAuto(ex, pddlDomainFile, pddlProblemFile, viewer, envFile, plan
             time.sleep(0.5)
         
             
-        updateInitFile(pddlProblemFile, iteration, plannerOutFname, \
+        updateInitFile(myPatcher, pddlProblemFile, iteration, plannerOutFname, \
                        plannerOutStr, errorStr, planCount, planner)
         print
 
 def run_with_ros(detector_and_cluster_map, envFile, viewer=True):
-    myPatcher = PDDLPatcher(initialProblemFile)
     planning_primitives.use_ros = True
     planning_primitives.detector_and_cluster_map = detector_and_cluster_map
     setupAndStart(pddlDomainFile, initialProblemFile,
@@ -241,6 +240,7 @@ def run_with_ros(detector_and_cluster_map, envFile, viewer=True):
 def setupAndStart(pddlDomainFile, initialProblemFile,
     viewer, envFile, planner="ff"):
     
+    myPatcher = PDDLPatcher(initialProblemFile)
     iteration = 0
     pddlProblemFile = initialProblemFile
     
@@ -251,12 +251,10 @@ def setupAndStart(pddlDomainFile, initialProblemFile,
     if len(goalObject) > 0:
         editedProblemFile = utils.setGoalObject(goalObject, pddlProblemFile)
              
-    iterativePlanAuto(ORSetup, pddlDomainFile, editedProblemFile, viewer, envFile, planner)
+    iterativePlanAuto(myPatcher, ORSetup, pddlDomainFile, editedProblemFile, viewer, envFile, planner)
 
 
 if __name__ == "__main__":
-    myPatcher = PDDLPatcher(initialProblemFile)
-    
     try:
         opts, args = getopt.getopt(sys.argv[1:],"v")
     except getopt.GetoptError:
