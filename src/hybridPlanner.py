@@ -232,17 +232,30 @@ def iterativePlanAuto(ex, pddlDomainFile, pddlProblemFile, viewer, envFile, plan
 def run_with_ros(detector_and_cluster_map, envFile, viewer=True):
     planning_primitives.use_ros = True
     planning_primitives.detector_and_cluster_map = detector_and_cluster_map
-    iterativePlanAuto(pddlDomainFile, initialProblemFile,
+    setupAndStart(pddlDomainFile, initialProblemFile,
                       viewer, envFile, planner="ff")
 
-def main(argv):
+def setupAndStart(pddlDomainFile, initialProblemFile,
+    viewer, envFile, planner="ff"):
+    
     iteration = 0
     pddlProblemFile = initialProblemFile
     
-    
+    print "Using initial problem file " + pddlProblemFile
+    ORSetup = planning_primitives.initOpenRave(viewer, envFile)
+    goalObject = raw_input("Enter object to pick up, or press return for default:")
+    editedProblemFile = pddlProblemFile
+    if len(goalObject) > 0:
+        editedProblemFile = utils.setGoalObject(goalObject, pddlProblemFile)
+             
+    iterativePlanAuto(ORSetup, pddlDomainFile, editedProblemFile, viewer, envFile, planner)
 
+
+if __name__ == "__main__":
+    myPatcher = PDDLPatcher(initialProblemFile)
+    
     try:
-        opts, args = getopt.getopt(argv[1:],"v")
+        opts, args = getopt.getopt(sys.argv[1:],"v")
     except getopt.GetoptError:
         print 'Use -v for viewer'
         sys.exit(2)
@@ -252,20 +265,9 @@ def main(argv):
         if opt == "-v":
             print "Setting viewer mode to True"
             viewer = True
+            
+    setupAndStart(pddlDomainFile, initialProblemFile, viewer, envFile, planner = 'ff')
 
-    print "Using initial problem file " + pddlProblemFile
-    ORSetup = planning_primitives.initOpenRave(viewer, envFile)
-    goalObject = raw_input("Enter object to pick up, or press return for default:")
-    editedProblemFile = pddlProblemFile
-    if len(goalObject) > 0:
-        editedProblemFile = utils.setGoalObject(goalObject, pddlProblemFile)
-             
-    iterativePlanAuto(ORSetup, pddlDomainFile, editedProblemFile, viewer, envFile, planner="ff")
-
-
-if __name__ == "__main__":
-    myPatcher = PDDLPatcher(initialProblemFile)
-    main(sys.argv)
     #pddlDomainFile = '../domains/dinnerTimeNoNegationCosts_dom.pddl'
     #pddlProblemFile = '../domains/dinnerTimeNoNegationCosts_prob.pddl'
     #plan, fdOutStr = runPlannerFD(pddlDomainFile, pddlProblemFile)
