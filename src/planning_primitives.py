@@ -100,10 +100,6 @@ class Executor(object):
         print "ignore me !"    
     
     def grasp(self, obj_name, _unused1, _unused2):
-        # NOTICE: Manual selection of objects is used for debugging purposes only
-        num = raw_input("Enter an object number, or press Enter to continue: ")
-        if num.isdigit():
-            obj_name = 'object{}'.format(num)
 
         print "Grasping object ", obj_name
         obj = self.env.GetKinBody(obj_name)
@@ -544,7 +540,8 @@ class PlanParser(object):
              sol, torso_angle,
              collision_list) = reachability.get_occluding_objects_names(robot,
                                                          obj,
-                                                         lambda b:b.GetName().startswith("random"),
+                                                         lambda b:b.GetName().startswith("random") or\
+                                                            b.GetName().startswith('object'),
                                                          occluding_objects_grasping_samples,
                                                          just_one_attempt=True,
                                                          return_pose=True)
