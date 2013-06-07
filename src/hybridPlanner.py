@@ -6,6 +6,7 @@ import getopt
 import StringIO
 import glob
 totalExecTime = 0
+myPatcher = None
 
 def execCmd(cmd,  successStr, outputFname, pollTime = 2):
     ''' A generic utility for executing a command. 
@@ -229,6 +230,7 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, envFile, planner 
         print
 
 def run_with_ros(detector_and_cluster_map, envFile, viewer=True):
+    myPatcher = PDDLPatcher(initialProblemFile)
     planning_primitives.use_ros = True
     planning_primitives.detector_and_cluster_map = detector_and_cluster_map
     iterativePlanAuto(pddlDomainFile, initialProblemFile,
