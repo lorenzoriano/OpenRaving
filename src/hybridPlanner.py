@@ -180,7 +180,7 @@ def updateInitFile(myPatcher, pddlProblemFile, iteration, plannerOutFname, \
 
 def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, envFile, planner = "ff"):
     iteration = 0
-    
+    initialProblemFile = pddlProblemFile
     cacheClearCount = 0
     while True:
         iteration += 1

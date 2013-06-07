@@ -316,7 +316,7 @@ def setGoalObject(objName, pddlFile):
     pddlStr = open(pddlFile).read()
     goalStr = "At " + objName + " table6"
     outStr = re.sub(r'At \w* table6', goalStr, pddlStr)
-    outf =  pddlFile + "_edited"
+    outf =  pddlFile.replace(".pddl", "_edited.pddl")
     f = open(outf, 'w')
     f.write(outStr)
     return outf
