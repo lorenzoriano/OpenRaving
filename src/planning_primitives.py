@@ -544,7 +544,8 @@ class PlanParser(object):
              sol, torso_angle,
              collision_list) = reachability.get_occluding_objects_names(robot,
                                                          obj,
-                                                         lambda b:b.GetName().startswith("random"),
+                                                         lambda b:b.GetName().startswith("random") or\
+                                                            b.GetName().startswith('object'),
                                                          occluding_objects_grasping_samples,
                                                          just_one_attempt=True,
                                                          return_pose=True)

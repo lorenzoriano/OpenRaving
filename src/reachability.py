@@ -30,17 +30,16 @@ def get_occluding_objects_names(robot,
         obstacles_bodies =  get_occluding_objects(robot, obj, num_trials, just_one_attempt,
                                              return_pose)
     openravepy.raveLogInfo("Bodies: %s" % obstacles_bodies)  
-    nonempty = lambda l:len(l)>0
-    obstacles = set( filter(nonempty,
-                            (tuple(str(b.GetName()) 
-                                  for b in l 
-                                  if body_filter(b) and
-                                  b.GetName() != obj.GetName()
-                                  ) 
-                            for l in obstacles_bodies
-                            )
-                            )
-                     )
+    obstacles = set()
+    for l in obstacles_bodies:
+        t = []
+        for b in l:
+            if body_filter(b) and (b.GetName() != obj.GetName()):
+                t.append(str(b.GetName()))
+        t = tuple(t)
+        if len(t) > 0:
+            obstacles.add(t)
+
     if return_pose:
         return pose, sol, torso_angle, obstacles
     else:
