@@ -6,6 +6,7 @@ import getopt
 import StringIO
 import glob
 totalExecTime = 0
+import utils
 
 def execCmd(cmd,  successStr, outputFname, pollTime = 2):
     ''' A generic utility for executing a command. 
@@ -175,9 +176,9 @@ def updateInitFile(pddlProblemFile, iteration, plannerOutFname, \
     myPatcher.writeCurrentInitState(pddlProblemFile)
 
 
-def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, envFile, planner = "ff"):
+def iterativePlanAuto(ex, pddlDomainFile, pddlProblemFile, viewer, envFile, planner = "ff"):
     iteration = 0
-    ex = planning_primitives.initOpenRave(viewer, envFile)
+    
     cacheClearCount = 0
     while True:
         iteration += 1
@@ -189,7 +190,7 @@ def iterativePlanAuto(pddlDomainFile, pddlProblemFile, viewer, envFile, planner 
         
         reinterpret = "y"
         if strPlanFileH ==-1:
-            #reinterpret = raw_input("Planner failed. Reinterpret (y/n)?")
+            reinterpret = raw_input("Planner failed. Reinterpret (y/n)?")
             if cacheClearCount == 1:
                 reinterpret == "n"
             if reinterpret != "y":
@@ -237,6 +238,8 @@ def run_with_ros(detector_and_cluster_map, envFile, viewer=True):
 def main(argv):
     iteration = 0
     pddlProblemFile = initialProblemFile
+    
+    
 
     try:
         opts, args = getopt.getopt(argv[1:],"v")
@@ -250,8 +253,14 @@ def main(argv):
             print "Setting viewer mode to True"
             viewer = True
 
-            
-    iterativePlanAuto(pddlDomainFile, initialProblemFile, viewer, envFile, planner="ff")
+    print "Using initial problem file " + pddlProblemFile
+    ORSetup = planning_primitives.initOpenRave(viewer, envFile)
+    goalObject = raw_input("Enter object to pick up, or press return for default:")
+    editedProblemFile = pddlProblemFile
+    if len(goalObject) > 0:
+        editedProblemFile = utils.setGoalObject(goalObject, pddlProblemFile)
+             
+    iterativePlanAuto(ORSetup, pddlDomainFile, editedProblemFile, viewer, envFile, planner="ff")
 
 
 if __name__ == "__main__":

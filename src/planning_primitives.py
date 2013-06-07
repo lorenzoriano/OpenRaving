@@ -614,6 +614,7 @@ def clearGPCache(ex):
 if __name__ == "__main__":
     global envFile
     initOpenRave(envFile)
+
     try:
         test("wrongplan.txt")
     except ExecutingException, e:
