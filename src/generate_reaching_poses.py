@@ -137,6 +137,12 @@ def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = F
     only_reachable: do not check for collisions
     """
     
+    # opening gripper
+    pr2 = env.GetRobots()[0]
+    v = pr2.GetActiveDOFValues()
+    v[pr2.GetJoint('r_gripper_l_finger_joint').GetDOFIndex()]=0.54
+    pr2.SetDOFValues(v)
+
     env.Remove(obj_to_grasp)
     if len(grasping_poses) == 0:
         return None
