@@ -1,5 +1,6 @@
 import numpy as np
 import openravepy
+import re
 
 pre_grasps = np.array([[ -3.14269681e-01,   1.11111111e-01,   9.42809042e-01,
                          -8.88888889e-01,   3.14269681e-01,  -3.33333333e-01,
@@ -309,3 +310,13 @@ def get_all_collisions(obj, env):
             collisions.add(report.plink2.GetParent())
     
     return collisions
+
+
+def setGoalObject(objName, pddlFile):
+    pddlStr = open(pddlFile).read()
+    goalStr = "At " + objName + " table6"
+    outStr = re.sub(r'At \w* table6', goalStr, pddlStr)
+    outf =  pddlFile + "_edited"
+    f = open(outf, 'w')
+    f.write(outStr)
+    return outf
