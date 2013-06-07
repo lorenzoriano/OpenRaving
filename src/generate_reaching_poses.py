@@ -64,6 +64,7 @@ def generate_grasping_pose(robot,
     
     if use_general_grasps:
         gmodel.grasps = utils.side_pre_grasps
+        np.random.shuffle(gmodel.grasps)
     
     else:
         if not gmodel.load():

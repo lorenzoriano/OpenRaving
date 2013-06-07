@@ -25,7 +25,7 @@ if initialProblemFile == path:
     #initialProblemFile = path + "dinnerTimeNoNegationCostsTargets_prob.pddl"
 
 
-collision_free_grasping_samples = 500
-occluding_objects_grasping_samples = 500
+collision_free_grasping_samples = 1
+occluding_objects_grasping_samples = 1
 envFile = "created_info.dae"
 #envFile = "tray_world.dae"
