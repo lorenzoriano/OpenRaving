@@ -11,6 +11,7 @@ import sys
 import pdb
 import numpy
 
+
 use_ros = False
 
 try:
@@ -49,7 +50,10 @@ class Executor(object):
         self.grasping_locations_cache = {}
         self.viewMode = viewer
         self.tray_stack = []
-
+        self.unMovableObjects = ['table']
+        self.objSequenceInPlan = []
+        
+        
         if use_ros:
             self.pr2robot = PR2Robot(self.env)
             self.pr2robot.robot = self.robot
@@ -68,6 +72,12 @@ class Executor(object):
         if not ikmodel.load():
             ikmodel.autogenerate()            
     
+
+    def setObjSequenceInPlan(self, objList):
+        self.objSequenceInPlan = objList
+        print 
+        print "Will try to pick objs in the order " + repr(objList)
+
 
     def clear_gp_cache(self):
         self.grasping_locations_cache = {}
@@ -102,7 +112,8 @@ class Executor(object):
     
     def grasp(self, obj_name, _unused1, _unused2):
         # update openrave
-        self.pr2robot.update_rave()
+        if use_ros:
+            self.pr2robot.update_rave()
 
         print "Grasping object ", obj_name
         obj = self.env.GetKinBody(obj_name)
@@ -169,7 +180,8 @@ class Executor(object):
                 raise e
 
             # update openrave
-            self.pr2robot.update_rave()
+            if use_ros:
+                self.pr2robot.update_rave()
         else:
             self.pause("Moving to location")
             self.robot.SetTransform(pose)
@@ -244,7 +256,8 @@ class Executor(object):
             joint_mover.open_right_gripper(True)
 
             # update openrave
-            self.pr2robot.update_rave()
+            if use_ros:
+                self.pr2robot.update_rave()
         else:
             self.pause("Moving to location")
             self.robot.SetTransform(pose)
@@ -441,9 +454,14 @@ class PlanParser(object):
         self.need_binding = set()
         self.parsing_result = None
         
-        self.parse(file_obj)        
+        self.parse(file_obj)  
+        
+        self.handled_objs = set()
     
-    def parse(self, file_obj):        
+    def updateHandledObjs(self, args):
+        return
+    
+    def parse(self, file_obj): 
         functions = []
         for l in file_obj:            
             function = {}
@@ -531,6 +549,9 @@ class PlanParser(object):
             action_name =  instruction["name"] + "(" + ", ".join( instruction['args']) + ")"
             print "Executing action ", action_name
             
+            if action_name == 'grasp':
+                self.updateHandledObjs(args)
+            
             method = instruction['method']
             
             args = [self.bind_variable(a) for a in instruction['args']]
@@ -555,12 +576,19 @@ class PlanParser(object):
         print "Handling an error"
         if "collision" in error.problem:
             print "Got a collision error, finding occlusions"
+            if not doJointInterpretation:
+                body_filter = lambda b:b.GetName().startswith("random") or\
+                                        b.GetName().startswith('object')
+            else:
+                futureObjects = set(self.executor.objSequenceInPlan) - self.handled_objs
+                body_filter = lambda b: (b.GetName() not in futureObjs) \
+                                       and (b.GetName() not in self.unMovableObjects)
+                
             (pose,
              sol, torso_angle,
              collision_list) = reachability.get_occluding_objects_names(robot,
                                                          obj,
-                                                         lambda b:b.GetName().startswith("random") or\
-                                                            b.GetName().startswith('object'),
+                                                         body_filter,
                                                          occluding_objects_grasping_samples,
                                                          just_one_attempt=True,
                                                          return_pose=True)
@@ -613,8 +641,9 @@ def initOpenRave(viewer = False, envFile = None):
     return ex
         
 
-def test(planFName, ex):
+def test(planFName, ex, objList):
     parser = PlanParser(planFName, ex);
+    ex.setObjSequenceInPlan(objList)
     
     try:
         parser.execute(1)

@@ -6,6 +6,7 @@ import getopt
 import StringIO
 import glob
 import utils
+import re
 
 totalExecTime = 0
 #myPatcher = None
@@ -178,6 +179,41 @@ def updateInitFile(myPatcher, pddlProblemFile, iteration, plannerOutFname, \
     myPatcher.writeCurrentInitState(pddlProblemFile)
 
 
+def forgetAndRestart(learnedPredicate, problemFile, executor, cacheClearCount):
+    cacheClearCount += 1
+    myPatcher.forgetLearnedFactsAbout("obstructs")
+    myPatcher.writeCurrentInitState(pddlProblemFile)
+    planning_primitives.clearGPCache(ex)
+    cacheClearCount += 1
+
+
+def terminateOrReinterpret():
+    reinterpret = raw_input("Planner failed. Reinterpret (y/n)?")
+    if reinterpret != 'y':
+        print "Quittting"
+        sys.exit(-1)
+      
+            
+def getObjSeqInPlan(file_object_or_name, objectNamePrefix = 'object'):
+        objSeq = []
+        if type(file_object_or_name) is str:
+            file_obj = open(file_object_or_name)
+        else:
+            file_obj = file_object_or_name
+            
+        planStr = file_obj.read().lower()
+        planLines = planStr.strip().split("\n")
+        for line in planLines:
+            if 'grasp' in line:
+                fixedWLine = re.sub(r' +', ' ', line)
+                objMatch = re.search('(?<=grasp )\w+', fixedWLine)
+                obj = objMatch.group(0)
+                objSeq.append(obj)
+                
+        file_obj.seek(0)
+    
+        return objSeq       
+
 def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, envFile, planner = "ff"):
     iteration = 0
     initialProblemFile = pddlProblemFile
@@ -189,23 +225,21 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
         strPlanFileH, plannerOutStr, planCount = runPlanner(pddlDomainFile, pddlProblemFile, plannerOutFname, planner)
         prevPDDLFile = pddlProblemFile
         pddlProblemFile = initialProblemFile.replace(".pddl", repr(iteration) + ".pddl")
-        
+        pdb.set_trace()
         reinterpret = "y"
         if strPlanFileH ==-1:
-            reinterpret = raw_input("Planner failed. Reinterpret (y/n)?")
-            if cacheClearCount == 1:
-                reinterpret == "n"
-            if reinterpret != "y":
-                print "Quitting"
-                sys.exit(-1)
-            myPatcher.forgetLearnedFactsAbout("obstructs")
-            myPatcher.writeCurrentInitState(pddlProblemFile)
-            planning_primitives.clearGPCache(ex)
-            cacheClearCount += 1
+            terminateOrReinterpret()
+            cacheClearCount = forgetAndRestart("obstructs", pddlProblemFile, ex, \
+                cacheClearCount)
+        
             continue
 
+        objSeq = []
+        if planner == "ff":
+            objSeq = getObjSeqInPlan(strPlanFileH)
+
         try:
-            planning_primitives.test(strPlanFileH, ex)
+            planning_primitives.test(strPlanFileH, ex, objSeq)
             print "Success. Quitting."
             print "Total planning time: {0}".format(totalExecTime)
             print "Replan count: "+ repr(iteration)
@@ -217,9 +251,9 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
             errorStr = e.pddl_error_info
     
         if errorStr == "":
-            print "Failure: Error in simulation. Try increasing number of samples."
-            raw_input("Press return to quit!") 
-            sys.exit(-1)
+            print "Lower level failed without error message. Possibly due to sampling limit."
+            terminateOrReinterpret()
+
 
         print "Got facts:"
         print errorStr
@@ -238,9 +272,8 @@ def run_with_ros(detector_and_cluster_map, envFile, viewer=True):
     setupAndStart(pddlDomainFile, initialProblemFile,
                       viewer, envFile, planner="ff")
 
-def setupAndStart(pddlDomainFile, initialProblemFile,
+def setupAndStart(pddlDomainFile, initialProblemFile,\
     viewer, envFile, planner="ff"):
-    
     editedProblemFile = initialProblemFile
     iteration = 0
     

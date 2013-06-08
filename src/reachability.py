@@ -3,6 +3,7 @@ import utils
 import openravepy
 import time
 
+
 def get_occluding_objects_names(robot, 
                                 obj,
                                 body_filter,
@@ -25,10 +26,10 @@ def get_occluding_objects_names(robot,
         (pose,
          sol, torso_angle,         
          obstacles_bodies) = get_occluding_objects(robot, obj, num_trials, just_one_attempt,
-                                             return_pose)
+                                             return_pose, body_filter)
     else:
         obstacles_bodies =  get_occluding_objects(robot, obj, num_trials, just_one_attempt,
-                                             return_pose)
+                                             return_pose, body_filter)
     openravepy.raveLogInfo("Bodies: %s" % obstacles_bodies)  
     obstacles = set()
     for l in obstacles_bodies:
@@ -49,7 +50,8 @@ def get_occluding_objects(robot,
                              object_to_grasp, 
                              max_trials = 0,
                               just_one_attempt = False,
-                              return_pose = False
+                              return_pose = False,
+                              body_filter = None
                              ):
     """Generates a list of all the objects that prevent the robot from reaching
     a target object. Several (up to max_trials) attempts are performed to grasp
@@ -106,11 +108,16 @@ def get_occluding_objects(robot,
                 #gripper poses into the robot's frame of reference
                 sol, collisions = generate_reaching_poses.check_reachable(
                     env, object_to_grasp, manip, grasping_poses, only_reachable = True)
+                
                 if sol is None:
-                    print "Trial {0} No sol from base pose to gripper pose".\
+                    print "Finding collisions: trial {0} No sol from base pose to gripper pose".\
                         format(num_trial)
                 
-                if sol is not None:                  
+                badCollisions = False
+                if body_filter is not None:
+                    badCollisions = filter(body_filter, collisions)
+                
+                if sol is not None and not badCollisions:                  
                     print "Sol from base pose to gripper pose found in trial {0}".\
                         format(num_trial)
                     openravepy.raveLogInfo("Getting the list of collisions")
@@ -118,6 +125,8 @@ def get_occluding_objects(robot,
                         #robot.SetDOFValues(sol, robot.GetActiveManipulator().GetArmIndices());                    
                         #collisions_list.append(utils.get_all_collisions(robot, env))
                         collisions_list.append(collisions)
+                    
+                            
                         if just_one_attempt:
                             if return_pose:
                                 return (robot_pose, sol, torso_angle, collisions_list)

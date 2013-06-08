@@ -15,7 +15,7 @@ if pddlDomainFile == path:
 
 initialProblemFile = path #+ raw_input("Enter PDDL problem file name: ")
 if initialProblemFile == path:
-    #initialProblemFile = path + "robotics_autogen_prob_50objs_typed.pddl"
+    #initialProblemFile = path + "robotics_autogen_prob_65objs_typed.pddl"
     initialProblemFile = path + "canworld_gazebo_10cans.pddl"
     
     
@@ -27,5 +27,9 @@ if initialProblemFile == path:
 
 collision_free_grasping_samples = 1
 occluding_objects_grasping_samples = 1
+doJointInterpretation = False
+
+
 envFile = "created_info.dae"
 #envFile = "tray_world.dae"
+#envFile = "boxes65.dae"
