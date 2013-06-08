@@ -161,7 +161,8 @@ class Executor(object):
                                         processing_reply.collision_object_names[index],
                                         processing_reply.collision_support_surface_name,
                                         'right_arm',
-                                        desired_grasps=desired_grasps)
+                                        desired_grasps=desired_grasps,
+                                        lift_desired_distance = 0.3)
             if res is None:
                 e = ExecutingException("ROS pickup failed")
                 e.robot = self.robot
@@ -230,11 +231,20 @@ class Executor(object):
         
         if use_ros:
             # Move arm to drop location
-            p = (0.1, -0.8, 0.1)
+            p = (0.3, -0.5, 0.3)
             q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
             res = self.arm_mover.move_right_arm(p, q, '/torso_lift_link', 30)
             if not res:
-                e = ExecutingException("ROS putdown failed")
+                e = ExecutingException("ROS putdown step 1 failed")
+                e.robot = self.robot
+                e.object_to_grasp = obj
+                raise e
+
+            p = (0.1, -0.8, -0.1)
+            q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
+            res = self.arm_mover.move_right_arm(p, q, '/torso_lift_link', 30)
+            if not res:
+                e = ExecutingException("ROS putdown step 2 failed")
                 e.robot = self.robot
                 e.object_to_grasp = obj
                 raise e
