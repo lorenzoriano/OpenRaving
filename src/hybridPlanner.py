@@ -179,12 +179,12 @@ def updateInitFile(myPatcher, pddlProblemFile, iteration, plannerOutFname, \
     myPatcher.writeCurrentInitState(pddlProblemFile)
 
 
-def forgetAndRestart(learnedPredicate, problemFile, executor, cacheClearCount):
+def forgetAndRestart(myPatcher, learnedPredicate, problemFile, executor, cacheClearCount):
     cacheClearCount += 1
     myPatcher.forgetLearnedFactsAbout("obstructs")
-    myPatcher.writeCurrentInitState(pddlProblemFile)
-    planning_primitives.clearGPCache(ex)
-    cacheClearCount += 1
+    myPatcher.writeCurrentInitState(problemFile)
+    planning_primitives.clearGPCache(executor)
+    return cacheClearCount
 
 
 def terminateOrReinterpret():
@@ -192,6 +192,9 @@ def terminateOrReinterpret():
     if reinterpret != 'y':
         print "Quittting"
         sys.exit(-1)
+
+
+    return True
       
             
 def getObjSeqInPlan(file_object_or_name, objectNamePrefix = 'object'):
@@ -219,18 +222,16 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
     initialProblemFile = pddlProblemFile
     cacheClearCount = 0
     while True:
+        reinterpreted = False
         iteration += 1
         plannerOutFname = pddlProblemFile+ ".out"
         planCount = 0
         strPlanFileH, plannerOutStr, planCount = runPlanner(pddlDomainFile, pddlProblemFile, plannerOutFname, planner)
-        prevPDDLFile = pddlProblemFile
-        pddlProblemFile = initialProblemFile.replace(".pddl", repr(iteration) + ".pddl")
-        reinterpret = "y"
+ 
         if strPlanFileH ==-1:
-            terminateOrReinterpret()
-            cacheClearCount = forgetAndRestart("obstructs", pddlProblemFile, ex, \
+            reinterpreted = terminateOrReinterpret()
+            cacheClearCount = forgetAndRestart(myPatcher, "obstructs", pddlProblemFile, ex, \
                 cacheClearCount)
-        
             continue
 
         objSeq = []
@@ -251,9 +252,10 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
     
         if errorStr == "":
             print "Lower level failed without error message. Possibly due to sampling limit."
-            terminateOrReinterpret()
+            reinterpreted = terminateOrReinterpret()
+            cacheClearCount = forgetAndRestart(myPatcher, "obstructs", pddlProblemFile, ex, \
+                cacheClearCount)
             continue
-
 
         print "Got facts:"
         print errorStr
@@ -261,6 +263,9 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
             #raw_input("Press return to continue")
             time.sleep(0.5)
         
+        prevPDDLFile = pddlProblemFile
+        pddlProblemFile = initialProblemFile.replace(".pddl", repr(iteration) + ".pddl")
+
             
         updateInitFile(myPatcher, pddlProblemFile, iteration, plannerOutFname, \
                        plannerOutStr, errorStr, planCount, planner)

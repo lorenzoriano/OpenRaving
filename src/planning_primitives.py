@@ -587,12 +587,12 @@ class PlanParser(object):
         if "collision" in error.problem:
             print "Got a collision error, finding occlusions"
             if not doJointInterpretation:
-                body_filter = lambda b:b.GetName().startswith("random") or\
+                body_filter = lambda b: b.GetName().startswith("random") or\
                                         b.GetName().startswith('object')
             else:
                 futureObjects = set(self.executor.objSequenceInPlan) - self.handled_objs
-                body_filter = lambda b: (b.GetName() not in futureObjs) \
-                                       and (b.GetName() not in self.unMovableObjects)
+                body_filter = lambda b: (b.GetName() not in futureObjects) \
+                                       and (b.GetName() not in self.executor.unMovableObjects)
                 
             (pose,
              sol, torso_angle,

@@ -27,7 +27,7 @@ if initialProblemFile == path:
 
 collision_free_grasping_samples = 1
 occluding_objects_grasping_samples = 1
-doJointInterpretation = False
+doJointInterpretation = True
 
 
 envFile = "created_info.dae"

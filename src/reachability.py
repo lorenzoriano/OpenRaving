@@ -3,6 +3,7 @@ import utils
 import openravepy
 import time
 
+from settings import doJointInterpretation
 
 def get_occluding_objects_names(robot, 
                                 obj,
@@ -113,11 +114,12 @@ def get_occluding_objects(robot,
                     print "Finding collisions: trial {0} No sol from base pose to gripper pose".\
                         format(num_trial)
                 
-                badCollisions = False
+                goodCollisions = False
                 if body_filter is not None:
-                    badCollisions = filter(body_filter, collisions)
+                    goodCollisions = filter(body_filter, collisions)
+                    print "good collisions: " + repr(goodCollisions)
                 
-                if sol is not None and not badCollisions:                  
+                if sol is not None and goodCollisions:                  
                     print "Sol from base pose to gripper pose found in trial {0}".\
                         format(num_trial)
                     openravepy.raveLogInfo("Getting the list of collisions")
@@ -133,7 +135,7 @@ def get_occluding_objects(robot,
                             else:
                                 return collisions_list
         if num_trial == max_trials:
-            print "No gripper pose reachable from collision free base pose found",
+            print "Getting obj names: No gripper pose reachable from collision free base pose found",
             print "after {0} trials".format(num_trial)
 
     if return_pose:
