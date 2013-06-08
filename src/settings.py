@@ -16,7 +16,7 @@ if pddlDomainFile == path:
 initialProblemFile = path #+ raw_input("Enter PDDL problem file name: ")
 if initialProblemFile == path:
     #initialProblemFile = path + "robotics_autogen_prob_50objs_typed.pddl"
-    initialProblemFile = path + "canworld_gazebo_7cans.pddl"
+    initialProblemFile = path + "canworld_gazebo_10cans.pddl"
     
     
     #for ff, dinnertime:
