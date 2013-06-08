@@ -230,7 +230,7 @@ class Executor(object):
         
         if use_ros:
             # Move arm to drop location
-            p = (0.1, -0.8, 0.2)
+            p = (0.1, -0.8, 0.1)
             q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
             res = self.arm_mover.move_right_arm(p, q, '/torso_lift_link', 30)
             if not res:
