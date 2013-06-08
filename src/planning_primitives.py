@@ -11,8 +11,10 @@ import sys
 import pdb
 import numpy
 
+if OpenRavePlanning:
+    from openrave_tests import test_grasp_move
 
-use_ros = False
+
 
 try:
     from tf import transformations
@@ -138,6 +140,9 @@ class Executor(object):
         else:
             print "Object %s already cached" %  obj_name
             pose, sol, torso_angle = cached_value
+        
+        if OpenRavePlanning:
+            test_grasp_move.move_arm(robot, pose, 'r')
         
         if use_ros:
             # # object matching
