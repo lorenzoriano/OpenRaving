@@ -104,7 +104,7 @@ def get_occluding_objects(robot,
                 #check if gripper pose is reachable from base pose
                 #use robot's base pose to transform precomputed
                 #gripper poses into the robot's frame of reference
-                sol = generate_reaching_poses.check_reachable(
+                sol, collisions = generate_reaching_poses.check_reachable(
                     env, object_to_grasp, manip, grasping_poses, only_reachable = True)
                 if sol is None:
                     print "Trial {0} No sol from base pose to gripper pose".\
@@ -115,8 +115,9 @@ def get_occluding_objects(robot,
                         format(num_trial)
                     openravepy.raveLogInfo("Getting the list of collisions")
                     with robot:
-                        robot.SetDOFValues(sol, robot.GetActiveManipulator().GetArmIndices());                    
-                        collisions_list.append(utils.get_all_collisions(robot, env))
+                        #robot.SetDOFValues(sol, robot.GetActiveManipulator().GetArmIndices());                    
+                        #collisions_list.append(utils.get_all_collisions(robot, env))
+                        collisions_list.append(collisions)
                         if just_one_attempt:
                             if return_pose:
                                 return (robot_pose, sol, torso_angle, collisions_list)
@@ -125,7 +126,6 @@ def get_occluding_objects(robot,
         if num_trial == max_trials:
             print "No gripper pose reachable from collision free base pose found",
             print "after {0} trials".format(num_trial)
-            
 
     return collisions_list
 

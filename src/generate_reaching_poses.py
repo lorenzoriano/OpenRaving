@@ -147,7 +147,7 @@ def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = F
 
     env.Remove(obj_to_grasp)
     if len(grasping_poses) == 0:
-        return None
+        return None, None
     if only_reachable:
         options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
     else:
@@ -159,11 +159,23 @@ def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = F
     for pose in grasping_poses:
         sol = manip.FindIKSolution(pose, options)
 
-        if sol is not None:
-            env.AddKinBody(obj_to_grasp)
-            return sol
+        if sol is None:
+            continue
+
+        # if sol has collisions with unmovable objects, continue
+        pr2.SetDOFValues(sol, pr2.GetActiveManipulator().GetArmIndices());                    
+        collisions =  utils.get_all_collisions(pr2, env)
+        # unmovable = lambda b: not (b.GetName().startswith("random") or\
+        #                            b.GetName().startswith('object'))
+        # unmovable_bodies = filter(unmovable, collisions)
+        # if len(unmovable_bodies) == 0:
+        #     pass
+        #     #continue
+
+        env.AddKinBody(obj_to_grasp)
+        return sol, collisions
     env.AddKinBody(obj_to_grasp)
-    return None
+    return None, None
 
 def get_collision_free_grasping_pose(robot,
                                      object_to_grasp, 
@@ -204,7 +216,7 @@ def get_collision_free_grasping_pose(robot,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol = check_reachable(env, object_to_grasp, manip, grasping_poses)
+    sol, _ = check_reachable(env, object_to_grasp, manip, grasping_poses)
     isreachable = sol is not None
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
     
@@ -223,7 +235,7 @@ def get_collision_free_grasping_pose(robot,
                 grasping_poses = generate_grasping_pose(robot, 
                                                         object_to_grasp,
                                                         use_general_grasps)                
-                sol = check_reachable(env, object_to_grasp, manip, grasping_poses)
+                sol, _ = check_reachable(env, object_to_grasp, manip, grasping_poses)
                 isreachable = sol is not None                
             else:
                 continue
@@ -270,7 +282,7 @@ def get_collision_free_ik_pose(robot, object_to_grasp,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol = check_reachable(env, object_to_grasp, manip, [ik_pose], only_reachable)
+    sol, _ = check_reachable(env, object_to_grasp, manip, [ik_pose], only_reachable)
     isreachable = sol is not None
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
     
@@ -287,7 +299,7 @@ def get_collision_free_ik_pose(robot, object_to_grasp,
             collision = env.CheckCollision(robot, report=report)
             
             if not collision:
-                sol = check_reachable(env, object_to_grasp, manip, [ik_pose], only_reachable)
+                sol, _ = check_reachable(env, object_to_grasp, manip, [ik_pose], only_reachable)
                 isreachable = sol is not None                
             else:
                 continue
@@ -337,7 +349,7 @@ def get_torso_grasping_pose(robot,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol = check_reachable(env, object_to_grasp, manip, grasping_poses)
+    sol, _ = check_reachable(env, object_to_grasp, manip, grasping_poses)
     isreachable = sol is not None
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
     
@@ -354,7 +366,7 @@ def get_torso_grasping_pose(robot,
                 grasping_poses = generate_grasping_pose(robot, 
                                                         object_to_grasp,
                                                         use_general_grasps)                
-                sol = check_reachable(env, object_to_grasp, manip, grasping_poses)
+                sol, _ = check_reachable(env, object_to_grasp, manip, grasping_poses)
                 isreachable = sol is not None                
             else:
                 continue
@@ -392,7 +404,7 @@ def get_torso_surface_pose(robot, obj,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol = check_reachable(env, obj, manip, grasping_poses)
+    sol, _ = check_reachable(env, obj, manip, grasping_poses)
     isreachable = sol is not None
     
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
@@ -408,7 +420,7 @@ def get_torso_surface_pose(robot, obj,
             
             if not collision:
                 grasping_poses = generate_manip_above_surface(obj)
-                sol = check_reachable(env, obj, manip, grasping_poses)
+                sol, _ = check_reachable(env, obj, manip, grasping_poses)
                 isreachable = sol is not None
             else:
                 continue
@@ -436,7 +448,7 @@ def get_collision_free_surface_pose(robot, obj,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol = check_reachable(env, obj, manip, grasping_poses)
+    sol, _ = check_reachable(env, obj, manip, grasping_poses)
     isreachable = sol is not None
     
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
@@ -454,7 +466,7 @@ def get_collision_free_surface_pose(robot, obj,
             
             if not collision:
                 grasping_poses = generate_manip_above_surface(obj)
-                sol = check_reachable(env, obj, manip, grasping_poses)
+                sol, _ = check_reachable(env, obj, manip, grasping_poses)
                 isreachable = sol is not None
             else:
                 continue
@@ -492,66 +504,67 @@ def main():
         openravepy.raveLogError("Error while trying to find a pose: %s" % e)
         return
 
-def generate_all_obstructions(env = None):
-    """Loads an environment and generates, for each object, the list of obstructions
-    to reach it (if they exist).
-    """
-    import settings
+# def generate_all_obstructions(env = None):
+#     """Loads an environment and generates, for each object, the list of obstructions
+#     to reach it (if they exist).
+#     """
+#     import settings
     
-    if env is None:
-        env = openravepy.Environment()    
-        env.Load('boxes.dae')
-    elif type(env) is str:
-        filename = env
-        env = openravepy.Environment()    
-        env.Load(filename)
+#     if env is None:
+#         env = openravepy.Environment()    
+#         env.Load('boxes.dae')
+#     elif type(env) is str:
+#         filename = env
+#         env = openravepy.Environment()    
+#         env.Load(filename)
         
-    #env.SetViewer('qtcoin')
-    robot=env.GetRobots()[0]
-    utils.pr2_tuck_arm(robot)
-    manip = robot.SetActiveManipulator('rightarm')
-    objects = [b
-               for b in env.GetBodies()
-               if b.GetName().startswith("random_")]
+#     #env.SetViewer('qtcoin')
+#     robot=env.GetRobots()[0]
+#     utils.pr2_tuck_arm(robot)
+#     manip = robot.SetActiveManipulator('rightarm')
+#     objects = [b
+#                for b in env.GetBodies()
+#                if b.GetName().startswith("random_")]
     
-    obstructions_text = []
-    position_index = 0
-    for obj in objects:        
-        #trying to grasp
-        print "Testing object ", obj
-        try:
-            get_collision_free_grasping_pose(
-                robot, 
-                obj,
-                max_trials=settings.collision_free_grasping_samples
-                )
-            print "Object ", obj, "is graspable"
-        except GraspingPoseError:
-            print "Object ", obj, "is NOT graspable, getting occlusions"
-            collision_list = reachability.get_occluding_objects_names(robot,
-                                        obj,
-                                        lambda b:b.GetName().startswith("random"),
-                                        settings.occluding_objects_grasping_samples,
-                                        just_one_attempt=False)
-            for coll in collision_list:
-                for obstr in coll:
-                    s =  "(Obstructs p%d %s %s)" %(position_index,
-                                                           obstr, obj.GetName())
-                    obstructions_text.append(s)
-                position_index += 1
+#     obstructions_text = []
+#     position_index = 0
+#     for obj in objects:        
+#         #trying to grasp
+#         print "Testing object ", obj
+#         try:
+#             get_collision_free_grasping_pose(
+#                 robot, 
+#                 obj,
+#                 max_trials=settings.collision_free_grasping_samples
+#                 )
+#             print "Object ", obj, "is graspable"
+#         except GraspingPoseError:
+#             print "Object ", obj, "is NOT graspable, getting occlusions"
+#             collision_list = reachability.get_occluding_objects_names(robot,
+#                                         obj,
+#                                         lambda b:b.GetName().startswith("random") or\
+#                                             b.GetName().startswith('object'),
+#                                         settings.occluding_objects_grasping_samples,
+#                                         just_one_attempt=False)
+#             for coll in collision_list:
+#                 for obstr in coll:
+#                     s =  "(Obstructs p%d %s %s)" %(position_index,
+#                                                            obstr, obj.GetName())
+#                     obstructions_text.append(s)
+#                 position_index += 1
 
-        print "\n\n\n"
-        print "\n".join(obstructions_text)
+#         print "\n\n\n"
+#         print "\n".join(obstructions_text)
         
     
         
-if __name__ == "__main__":
-    env_filename = None
-    if len(sys.argv) == 2:
-        env_filename = sys.argv[1]
+# if __name__ == "__main__":
+#     env_filename = None
+#     if len(sys.argv) == 2:
+#         env_filename = sys.argv[1]
     
-    generate_all_obstructions(env_filename)
-    #raw_input("Press a button to continue")
+#     generate_all_obstructions(env_filename)
+#     #raw_input("Press a button to continue")
 
     
     

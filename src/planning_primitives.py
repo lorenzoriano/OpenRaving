@@ -53,6 +53,7 @@ class Executor(object):
         if use_ros:
             self.pr2robot = PR2Robot(self.env)
             self.pr2robot.robot = self.robot
+            self.arm_mover = PR2MoveArm()
         
         #loading the IK models
         utils.pr2_tuck_arm(robot)
@@ -100,6 +101,8 @@ class Executor(object):
         print "ignore me !"    
     
     def grasp(self, obj_name, _unused1, _unused2):
+        # update openrave
+        self.pr2robot.update_rave()
 
         print "Grasping object ", obj_name
         obj = self.env.GetKinBody(obj_name)
@@ -126,17 +129,34 @@ class Executor(object):
             pose, sol, torso_angle = cached_value
         
         if use_ros:
-            detector, cluster_map = detector_and_cluster_map
-            index = cluster_map[obj_name]
+            # # object matching
+            detector, _ = detector_and_cluster_map
+            # index = cluster_map[obj_name]
+
+            # # generating grasps
+            # box_msg = detector.detect_bounding_box(detector.last_detection_msg.detection.clusters[index])
+            # desired_grasps = grasp_generator.generate_grasps(box_msg, 8)
+            # grasp_generator.draw_grasps(desired_grasps)
+
+            # object matching
+            detector.detect()
+            box_msgs = []
+            for cluster in detector.last_detection_msg.detection.clusters:
+                box_msgs.append(detector.detect_bounding_box(cluster))
+            box_msg, index = utils.find_nearest_box(obj, box_msgs)
 
             # generating grasps
-            box_msg = detector.detect_bounding_box(detector.last_detection_msg.detection.clusters[index])
-            desired_grasps = grasp_generator.generate_grasps(box_msg)
+            desired_grasps = grasp_generator.generate_grasps(box_msg, 8)
             grasp_generator.draw_grasps(desired_grasps)
 
             # pickup
             grabber = object_pickup.Grabber()
             processing_reply = detector.call_collision_map_processing(detector.last_detection_msg)
+            
+            # # reset planning scene
+            self.arm_mover.reset_collision_map()
+            self.arm_mover.update_planning_scene()
+
             res = grabber.pickup_object(processing_reply.graspable_objects[index],
                                         processing_reply.collision_object_names[index],
                                         processing_reply.collision_support_surface_name,
@@ -210,10 +230,9 @@ class Executor(object):
         
         if use_ros:
             # Move arm to drop location
-            arm_mover = PR2MoveArm()
             p = (0.1, -0.8, 0.2)
             q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
-            res = arm_mover.move_right_arm(p, q, '/torso_lift_link', 10)
+            res = self.arm_mover.move_right_arm(p, q, '/torso_lift_link', 30)
             if not res:
                 e = ExecutingException("ROS putdown failed")
                 e.robot = self.robot

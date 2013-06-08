@@ -218,6 +218,7 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
     
         if errorStr == "":
             print "Failure: Error in simulation. Try increasing number of samples."
+            raw_input("Press return to quit!") 
             sys.exit(-1)
 
         print "Got facts:"

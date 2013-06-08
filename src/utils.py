@@ -1,6 +1,7 @@
 import numpy as np
 import openravepy
 import re
+import math
 
 pre_grasps = np.array([[ -3.14269681e-01,   1.11111111e-01,   9.42809042e-01,
                          -8.88888889e-01,   3.14269681e-01,  -3.33333333e-01,
@@ -320,3 +321,26 @@ def setGoalObject(objName, pddlFile):
     f = open(outf, 'w')
     f.write(outStr)
     return outf
+
+def find_nearest_box(obj, box_msgs):
+    obj_x = obj.GetTransform()[0][3]
+    obj_y = obj.GetTransform()[1][3]
+    obj_z = obj.GetTransform()[2][3]
+
+    closest_dist = float("inf")
+    best_box_msg = None
+    index = 0
+    for i, box_msg in enumerate(box_msgs):
+        box_x = box_msg.pose.pose.position.x
+        box_y = box_msg.pose.pose.position.y
+        box_z = box_msg.pose.pose.position.z
+
+        dist = np.sqrt(np.power(box_x - obj_x, 2) + \
+                       np.power(box_y - obj_y, 2) + \
+                       np.power(box_z - obj_z, 2))
+        if dist < closest_dist:
+            best_box_msg = box_msg
+            closest_dist = dist
+            index = i
+
+    return best_box_msg, index
