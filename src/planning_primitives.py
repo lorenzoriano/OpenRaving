@@ -146,7 +146,7 @@ class Executor(object):
             box_msg, index = utils.find_nearest_box(obj, box_msgs)
 
             # generating grasps
-            desired_grasps = grasp_generator.generate_grasps(box_msg, 8)
+            desired_grasps = grasp_generator.generate_grasps(box_msg, 16)
             grasp_generator.draw_grasps(desired_grasps)
 
             # pickup
