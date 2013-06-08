@@ -252,7 +252,7 @@ class Executor(object):
                 e.object_to_grasp = obj
                 raise e
 
-            p = (0.1, -0.8, -0.1)
+            p = (0.1, -0.8, -0.2)
             q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
             res = self.arm_mover.move_right_arm(p, q, '/torso_lift_link', 30)
             if not res:
