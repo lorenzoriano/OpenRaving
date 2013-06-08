@@ -118,6 +118,7 @@ def get_occluding_objects(robot,
                 if body_filter is not None:
                     goodCollisions = filter(body_filter, collisions)
                     print "good collisions: " + repr(goodCollisions)
+                print "all collisions: " + repr(collisions)
                 
                 if sol is not None and goodCollisions:                  
                     print "Sol from base pose to gripper pose found in trial {0}".\
