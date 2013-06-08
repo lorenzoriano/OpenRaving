@@ -136,7 +136,10 @@ def get_occluding_objects(robot,
             print "No gripper pose reachable from collision free base pose found",
             print "after {0} trials".format(num_trial)
 
-    return collisions_list
+    if return_pose:
+        return (robot_pose, None, torso_angle, collisions_list)
+    else:
+        return collisions_list
 
 def predicates(target, occlusions_sets, initial_number=0):
     strs = []

@@ -225,7 +225,6 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
         strPlanFileH, plannerOutStr, planCount = runPlanner(pddlDomainFile, pddlProblemFile, plannerOutFname, planner)
         prevPDDLFile = pddlProblemFile
         pddlProblemFile = initialProblemFile.replace(".pddl", repr(iteration) + ".pddl")
-        pdb.set_trace()
         reinterpret = "y"
         if strPlanFileH ==-1:
             terminateOrReinterpret()
@@ -253,6 +252,7 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
         if errorStr == "":
             print "Lower level failed without error message. Possibly due to sampling limit."
             terminateOrReinterpret()
+            continue
 
 
         print "Got facts:"
