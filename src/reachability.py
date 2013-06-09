@@ -5,7 +5,7 @@ import time
 
 from settings import doJointInterpretation
 
-def get_occluding_objects_names(robot, 
+def get_occluding_objects_names(good_bodies, robot, 
                                 obj,
                                 body_filter,
                                 num_trials = 0,
@@ -20,16 +20,16 @@ def get_occluding_objects_names(robot,
     just_one_attempt: If True then it will return only the result of one successfull grasping attempt.
     
     Example usage:
-    get_occluding_objects_names(robot, obj, lambda b:b.GetName().startswith("random"), 500)
+    get_occluding_objects_names(good_bodies, robot, obj, lambda b:b.GetName().startswith("random"), 500)
     """
     
     if return_pose:
         (pose,
          sol, torso_angle,         
-         obstacles_bodies) = get_occluding_objects(robot, obj, num_trials, just_one_attempt,
+         obstacles_bodies) = get_occluding_objects(good_bodies, robot, obj, num_trials, just_one_attempt,
                                              return_pose, body_filter)
     else:
-        obstacles_bodies =  get_occluding_objects(robot, obj, num_trials, just_one_attempt,
+        obstacles_bodies =  get_occluding_objects(good_bodies, robot, obj, num_trials, just_one_attempt,
                                              return_pose, body_filter)
     openravepy.raveLogInfo("Bodies: %s" % obstacles_bodies)  
     obstacles = set()
@@ -47,7 +47,7 @@ def get_occluding_objects_names(robot,
     else:
         return obstacles
     
-def get_occluding_objects(robot, 
+def get_occluding_objects(good_bodies, robot, 
                              object_to_grasp, 
                              max_trials = 0,
                               just_one_attempt = False,
@@ -107,7 +107,7 @@ def get_occluding_objects(robot,
                 #check if gripper pose is reachable from base pose
                 #use robot's base pose to transform precomputed
                 #gripper poses into the robot's frame of reference
-                sol, collisions = generate_reaching_poses.check_reachable(
+                sol, collisions = generate_reaching_poses.check_reachable(good_bodies,
                     env, object_to_grasp, manip, grasping_poses, only_reachable = True)
                 
                 if sol is None:

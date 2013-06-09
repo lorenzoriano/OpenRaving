@@ -160,7 +160,7 @@ def generate_random_pos(robot, obj_to_grasp = None):
     return T
 
 
-def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = False):
+def check_reachable(good_bodies, env, obj_to_grasp, manip, grasping_poses, only_reachable = False):
     """Check if the robot can reach at least one pose 
 
     Parameters:
@@ -202,12 +202,20 @@ def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = F
         #     pass
         #     #continue
 
+        bad_body_exists = False
+        for body in collisions:
+            if body not in good_bodies:
+                bad_body_exists = True
+                break
+        if bad_body_exists:
+            continue
+
         env.AddKinBody(obj_to_grasp)
         return sol, collisions
     env.AddKinBody(obj_to_grasp)
     return None, []
 
-def get_collision_free_grasping_pose(robot,
+def get_collision_free_grasping_pose(good_bodies, robot,
                                      object_to_grasp, 
                                      max_trials = 100,
                                      use_general_grasps = True,
@@ -246,7 +254,7 @@ def get_collision_free_grasping_pose(robot,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol, _ = check_reachable(env, object_to_grasp, manip, grasping_poses)
+    sol, _ = check_reachable(good_bodies, env, object_to_grasp, manip, grasping_poses)
     isreachable = sol is not None
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
     
@@ -265,7 +273,7 @@ def get_collision_free_grasping_pose(robot,
                 grasping_poses = generate_grasping_pose(robot, 
                                                         object_to_grasp,
                                                         use_general_grasps)                
-                sol, _ = check_reachable(env, object_to_grasp, manip, grasping_poses)
+                sol, _ = check_reachable(good_bodies, env, object_to_grasp, manip, grasping_poses)
                 isreachable = sol is not None                
             else:
                 continue
@@ -276,7 +284,7 @@ def get_collision_free_grasping_pose(robot,
     else:
         return (robot_pose, sol, torso_angle)
 
-def get_collision_free_ik_pose(robot, object_to_grasp,
+def get_collision_free_ik_pose(good_bodies, robot, object_to_grasp,
                                      ik_pose, 
                                      max_trials = 100,
                                      only_reachable=False
@@ -312,7 +320,7 @@ def get_collision_free_ik_pose(robot, object_to_grasp,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol, _ = check_reachable(env, object_to_grasp, manip, [ik_pose], only_reachable)
+    sol, _ = check_reachable(good_bodies, env, object_to_grasp, manip, [ik_pose], only_reachable)
     isreachable = sol is not None
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
     
@@ -329,7 +337,7 @@ def get_collision_free_ik_pose(robot, object_to_grasp,
             collision = env.CheckCollision(robot, report=report)
             
             if not collision:
-                sol, _ = check_reachable(env, object_to_grasp, manip, [ik_pose], only_reachable)
+                sol, _ = check_reachable(good_bodies, env, object_to_grasp, manip, [ik_pose], only_reachable)
                 isreachable = sol is not None                
             else:
                 continue
@@ -340,7 +348,7 @@ def get_collision_free_ik_pose(robot, object_to_grasp,
     else:
         return (robot_pose, sol, torso_angle)
 
-def get_torso_grasping_pose(robot,
+def get_torso_grasping_pose(good_bodies, robot,
                                      object_to_grasp, 
                                      max_trials = 100,
                                      use_general_grasps = True,
@@ -379,7 +387,7 @@ def get_torso_grasping_pose(robot,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol, _ = check_reachable(env, object_to_grasp, manip, grasping_poses)
+    sol, _ = check_reachable(good_bodies, env, object_to_grasp, manip, grasping_poses)
     isreachable = sol is not None
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
     
@@ -396,7 +404,7 @@ def get_torso_grasping_pose(robot,
                 grasping_poses = generate_grasping_pose(robot, 
                                                         object_to_grasp,
                                                         use_general_grasps)                
-                sol, _ = check_reachable(env, object_to_grasp, manip, grasping_poses)
+                sol, _ = check_reachable(good_bodies, env, object_to_grasp, manip, grasping_poses)
                 isreachable = sol is not None                
             else:
                 continue
@@ -408,7 +416,7 @@ def get_torso_grasping_pose(robot,
         return (sol, torso_angle)
 
 def move_random_torso(robot, min_angle, max_angle, joint_index=[]):
-    return 0
+    return 1
     if joint_index == []:
         joint_index.append(robot.GetJointIndex('torso_lift_joint'))
     
@@ -416,7 +424,7 @@ def move_random_torso(robot, min_angle, max_angle, joint_index=[]):
     robot.SetDOFValues([angle],  joint_index)
     return angle
 
-def get_torso_surface_pose(robot, obj, 
+def get_torso_surface_pose(good_bodies, robot, obj, 
                                          max_trials = 100,
                                          use_general_grasps = True):
     
@@ -434,7 +442,7 @@ def get_torso_surface_pose(robot, obj,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol, _ = check_reachable(env, obj, manip, grasping_poses)
+    sol, _ = check_reachable(good_bodies, env, obj, manip, grasping_poses)
     isreachable = sol is not None
     
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
@@ -450,7 +458,7 @@ def get_torso_surface_pose(robot, obj,
             
             if not collision:
                 grasping_poses = generate_manip_above_surface(obj)
-                sol, _ = check_reachable(env, obj, manip, grasping_poses)
+                sol, _ = check_reachable(good_bodies, env, obj, manip, grasping_poses)
                 isreachable = sol is not None
             else:
                 continue
@@ -460,7 +468,7 @@ def get_torso_surface_pose(robot, obj,
     else:
         return (sol, torso_angle)
 
-def get_collision_free_surface_pose(robot, obj, 
+def get_collision_free_surface_pose(good_bodies, robot, obj, 
                                          max_trials = 500,
                                          use_general_grasps = True):
     
@@ -478,7 +486,7 @@ def get_collision_free_surface_pose(robot, obj,
     env.GetCollisionChecker().SetCollisionOptions(openravepy.CollisionOptions.Contacts)    
     
     collision = env.CheckCollision(robot)
-    sol, _ = check_reachable(env, obj, manip, grasping_poses)
+    sol, _ = check_reachable(good_bodies, env, obj, manip, grasping_poses)
     isreachable = sol is not None
     
     min_torso, max_torso = utils.get_pr2_torso_limit(robot)
@@ -496,7 +504,7 @@ def get_collision_free_surface_pose(robot, obj,
             
             if not collision:
                 grasping_poses = generate_manip_above_surface(obj)
-                sol, _ = check_reachable(env, obj, manip, grasping_poses)
+                sol, _ = check_reachable(good_bodies, env, obj, manip, grasping_poses)
                 isreachable = sol is not None
             else:
                 continue

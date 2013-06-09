@@ -52,8 +52,12 @@ class Executor(object):
         self.tray_stack = []
         self.unMovableObjects = ['table']
         self.objSequenceInPlan = []
+        self.handled_objs = set()
         
-        
+        v = self.robot.GetActiveDOFValues()
+        v[self.robot.GetJoint('torso_lift_joint').GetDOFIndex()]=1.0
+        self.robot.SetDOFValues(v)      
+
         if use_ros:
             self.pr2robot = PR2Robot(self.env)
             self.pr2robot.robot = self.robot
@@ -70,8 +74,17 @@ class Executor(object):
         ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
             robot,iktype=openravepy.IkParameterization.Type.Transform6D)    
         if not ikmodel.load():
-            ikmodel.autogenerate()            
-    
+            ikmodel.autogenerate()
+
+    def getGoodBodies(self):
+        if not doJointInterpretation:
+            body_filter = lambda b: b.GetName().startswith("random") or\
+                                    b.GetName().startswith('object')
+        else:
+            futureObjects = set(self.objSequenceInPlan) - self.handled_objs
+            body_filter = lambda b: (b.GetName() not in futureObjects) \
+                                   and (b.GetName() not in self.unMovableObjects)
+        return filter(body_filter, self.env.GetBodies())
 
     def setObjSequenceInPlan(self, objList):
         self.objSequenceInPlan = objList
@@ -81,7 +94,7 @@ class Executor(object):
 
     def clear_gp_cache(self):
         self.grasping_locations_cache = {}
-
+        self.objSequenceInPlan = []
 
     def pause(self, msg = None):
         if self.viewMode:
@@ -125,6 +138,7 @@ class Executor(object):
             print "Object %s is not cached, looking for a value" % obj_name
             try:
                 pose, sol, torso_angle = generate_reaching_poses.get_collision_free_grasping_pose(
+                                                                                  self.getGoodBodies(),
                                                                                   self.robot, 
                                                                                   obj,
                                                                                   max_trials=collision_free_grasping_samples
@@ -218,6 +232,7 @@ class Executor(object):
                 (pose,
                  sol,
                  torso_angle) = generate_reaching_poses.get_collision_free_ik_pose(
+                     self.getGoodBodies(),
                      self.env,
                      obj,
                      self.robot,
@@ -234,7 +249,7 @@ class Executor(object):
                 raise ValueError("Object %s does not exist" % table_name)
 
             try:
-                pose, sol, torso_angle = generate_reaching_poses.get_collision_free_surface_pose(
+                pose, sol, torso_angle = generate_reaching_poses.get_collision_free_surface_pose(self.getGoodBodies(),
                                                                                           self.robot, 
                                                                                           table,
                                                                                           )
@@ -316,7 +331,7 @@ class Executor(object):
         """""
         
         print "Getting base pose for putting down"
-        robot_pose, _, _= generate_reaching_poses.get_collision_free_surface_pose(
+        robot_pose, _, _= generate_reaching_poses.get_collision_free_surface_pose(self.getGoodBodies(),
                                                                                                        self.robot, 
                                                                                                        surface, 
                                                                                                        )
@@ -345,6 +360,7 @@ class Executor(object):
             (pose,
              sol,
              torso_angle) = generate_reaching_poses.get_collision_free_ik_pose(
+                 self.getGoodBodies(),
                  self.env,
                  obj,
                  self.robot,
@@ -469,6 +485,7 @@ class PlanParser(object):
         self.handled_objs = set()
     
     def updateHandledObjs(self, args):
+        self.executor.handled_objs = self.handled_objs
         return
     
     def parse(self, file_obj): 
@@ -596,7 +613,8 @@ class PlanParser(object):
                 
             (pose,
              sol, torso_angle,
-             collision_list) = reachability.get_occluding_objects_names(robot,
+             collision_list) = reachability.get_occluding_objects_names(self.executor.getGoodBodies(),
+                                                         robot,
                                                          obj,
                                                          body_filter,
                                                          occluding_objects_grasping_samples,
