@@ -52,36 +52,66 @@ def generate_grasping_pose(robot,
     
     class __Options(object):
         def __init__(self):
-            self.delta=0.1
-            self.normalanglerange=0.5
+            self.delta=0.0
+            self.normalanglerange=0.0
             self.standoffs = [0]
             #self.rolls = np.arange(0,2*np.pi,0.5*np.pi)
-            self.rolls = np.arange(0,np.pi,0.5*np.pi)
-            self.directiondelta = 0.4
+            self.rolls = np.arange(0,np.pi,0.25*np.pi)
+            self.directiondelta = 0.0
             pass
             
     gmodel = openravepy.databases.grasping.GraspingModel(robot, obj_to_grasp)
-    
+    #use_general_grasps = False
     if use_general_grasps:
-        gmodel.grasps = utils.side_pre_grasps
+        """
+        not_vertical = lambda grasp: openravepy.axisAngleFromRotationMatrix(
+          gmodel.getGlobalGraspTransform(grasp))[2] > 0.1
+
+        x_c = lambda grasp: gmodel.getGlobalGraspTransform(grasp)[:3,0][2] < 0.1
+        gmodel.grasps = filter(x_c, utils.cylinder_pre_grasps)
+        """
+        gmodel.grasps = utils.side_cylinder_pre_grasps
+        """
+        for i, grasp in enumerate(utils.cylinder_pre_grasps):
+            rot = gmodel.getGlobalGraspTransform(grasp)
+            a = openravepy.axisAngleFromRotationMatrix(rot)
+            print i
+            print a
+            gmodel.showgrasp(grasp)
+        """
+
         np.random.shuffle(gmodel.grasps)
     
     else:
         if not gmodel.load():
             openravepy.raveLogInfo("Generating grasping model...")
             gmodel.autogenerate(__Options())
+    """
+    text = '['
+    for grasp in gmodel.grasps:
+        text += '['
+        for joint in grasp:
+            text += str(joint)
+            text += ','
+        text += '],\n'
+    text += ']'
+
+    with open("grasps.txt", 'w') as grasp_file:
+        grasp_file.write(text)
+    """
 
     openravepy.raveLogInfo("Generating grasps")
     validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
                                                checkik = checkik,
                                                checkgrasper = False)
-
     """
     for grasp in validgrasps:
         gmodel.showgrasp(grasp)
     """
 
     openravepy.raveLogInfo("Number of valid grasps: %d" % len(validgrasps))
+    import pdb
+    #pdb.set_trace()
     return [gmodel.getGlobalGraspTransform(grasp) for grasp in validgrasps]
 
 def generate_random_pos(robot, obj_to_grasp = None):
@@ -147,7 +177,7 @@ def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = F
 
     env.Remove(obj_to_grasp)
     if len(grasping_poses) == 0:
-        return None, None
+        return None, []
     if only_reachable:
         options = (openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
     else:
@@ -175,7 +205,7 @@ def check_reachable(env, obj_to_grasp, manip, grasping_poses, only_reachable = F
         env.AddKinBody(obj_to_grasp)
         return sol, collisions
     env.AddKinBody(obj_to_grasp)
-    return None, None
+    return None, []
 
 def get_collision_free_grasping_pose(robot,
                                      object_to_grasp, 
