@@ -27,8 +27,10 @@ if initialProblemFile == path:
 
 collision_free_grasping_samples = 1
 occluding_objects_grasping_samples = 1
-doJointInterpretation = True
 
+doJointInterpretation = True
+use_ros = False
+OpenRavePlanning = False
 
 envFile = "created_info.dae"
 #envFile = "tray_world.dae"
