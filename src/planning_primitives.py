@@ -11,10 +11,10 @@ import sys
 import pdb
 import numpy
 
+from grasping_pose_generator import GraspingPoseGenerator, GraspingPoseError
+
 if OpenRavePlanning:
     from openrave_tests import test_grasp_move
-
-
 
 try:
     from tf import transformations
@@ -55,6 +55,8 @@ class Executor(object):
         self.unMovableObjects = ['table']
         self.objSequenceInPlan = []
         self.handled_objs = set()
+
+        self.grasping_pose_generator = GraspingPoseGenerator(self.env)
         
         v = self.robot.GetActiveDOFValues()
         v[self.robot.GetJoint('torso_lift_joint').GetDOFIndex()]=1.0
@@ -126,6 +128,20 @@ class Executor(object):
         print "ignore me !"    
     
     def grasp(self, obj_name, _unused1, _unused2):
+        obj = self.env.GetKinBody(obj_name)
+        try:
+            pose = self.grasping_pose_generator.get_col_free_grasping_pose(obj)
+            self.robot.SetDOFValues(pose,
+                                    self.robot.GetActiveManipulator().GetArmIndices())
+            self.robot.Grab(obj)
+        except GraspingPoseError:
+            e = ExecutingException("Object in collision")
+            e.robot = self.robot
+            e.object_to_grasp = obj
+            raise e
+        self.pause("Grasping object...")
+        return
+
         # update openrave
         if use_ros:
             self.pr2robot.update_rave()
@@ -289,10 +305,10 @@ class Executor(object):
             if use_ros:
                 self.pr2robot.update_rave()
         else:
-            self.pause("Moving to location")
+            # self.pause("Moving to location")
             self.robot.SetTransform(pose)
             
-            self.pause("Moving arm")
+            # self.pause("Moving arm")
             self.robot.SetDOFValues([torso_angle],
                                     [self.robot.GetJointIndex('torso_lift_joint')])
             self.robot.SetDOFValues(sol,
@@ -317,7 +333,7 @@ class Executor(object):
             del self.grasping_locations_cache[obj_name]
         except KeyError:
             print "funny, object ", obj_name, " was not in cache.. something wrong here!"
-            raw_input("Press return to continue")    
+            # raw_input("Press return to continue")    
         #self.pause()
         
     def find_gp(self, object_to_grasp) :
@@ -488,6 +504,8 @@ class PlanParser(object):
         self.parse(file_obj)  
         
         self.handled_objs = set()
+
+        self.grasping_pose_generator = GraspingPoseGenerator(self.executor.env)
     
     def updateHandledObjs(self, args):
         self.executor.handled_objs = self.handled_objs
@@ -616,26 +634,32 @@ class PlanParser(object):
                 body_filter = lambda b: (b.GetName() not in futureObjects) \
                                        and (b.GetName() not in self.executor.unMovableObjects)
                 
-            (pose,
-             sol, torso_angle,
-             collision_list) = reachability.get_occluding_objects_names(self.executor.getGoodBodies(),
-                                                         robot,
-                                                         obj,
-                                                         body_filter,
-                                                         occluding_objects_grasping_samples,
-                                                         just_one_attempt=True,
-                                                         return_pose=True)
-            
-            if len(collision_list) == 0:
+             # (pose,
+             # sol, torso_angle,
+             # collision_list) = reachability.get_occluding_objects_names(self.executor.getGoodBodies(),
+             #                                             robot,
+             #                                             obj,
+             #                                             body_filter,
+             #                                             occluding_objects_grasping_samples,
+             #                                             just_one_attempt=True,
+             #                                             return_pose=True)
+            pose = None
+            torso_angle = None
+
+            futureObjects = set(self.executor.objSequenceInPlan) - self.handled_objs
+            bad_body_filter = lambda b: (b.GetName() in futureObjects) \
+                                     or (b.GetName() in self.executor.unMovableObjects)
+            sol, collision_list = self.grasping_pose_generator.get_grasping_pose(obj, bad_body_filter, True)
+
+            if sol is None:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)
             
             #updating the executor cache
             self.executor.grasping_locations_cache[obj.GetName()] =  pose, sol, torso_angle
             
-            first_collisions = collision_list.pop()
             object_to_grasp_name = error.object_to_grasp.GetName()
             obst_list = "\n".join("(Obstructs %s %s %s)" %("gp_"+ object_to_grasp_name,
-                                                           obstr, object_to_grasp_name) for obstr in first_collisions)
+                                                           obstr, object_to_grasp_name) for obstr in collision_list)
             error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number, obst_list)
             return
         
