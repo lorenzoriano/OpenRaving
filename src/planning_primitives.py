@@ -90,6 +90,12 @@ class Executor(object):
                                    and (b.GetName() not in self.unMovableObjects)
         return filter(body_filter, self.env.GetBodies())
 
+    def get_bad_bodies(self):
+        futureObjects = set(self.objSequenceInPlan) - self.handled_objs
+        bad_body_filter = lambda b: (b.GetName() in futureObjects) \
+                                 or (b.GetName() in self.unMovableObjects)
+        return set(filter(bad_body_filter, self.env.GetBodies()))
+
     def setObjSequenceInPlan(self, objList):
         self.objSequenceInPlan = objList
         print 
@@ -645,11 +651,7 @@ class PlanParser(object):
              #                                             return_pose=True)
             pose = None
             torso_angle = None
-
-            futureObjects = set(self.executor.objSequenceInPlan) - self.handled_objs
-            bad_body_filter = lambda b: (b.GetName() in futureObjects) \
-                                     or (b.GetName() in self.executor.unMovableObjects)
-            sol, collision_list = self.grasping_pose_generator.get_grasping_pose(obj, bad_body_filter, True)
+            sol, collision_list = self.grasping_pose_generator.get_grasping_pose(obj, self.executor.get_bad_bodies(), True)
 
             if sol is None:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)

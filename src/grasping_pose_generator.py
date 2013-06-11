@@ -30,9 +30,9 @@ class GraspingPoseGenerator(object):
     return pose
 
   def get_grasping_pose(self, obj_to_grasp,
-                        bad_body_filter=None, return_collisions=False):
+                        bad_bodies=None, return_collisions=False):
     pose, collisions = self._get_min_col_grasping_pose(obj_to_grasp,
-                                                       bad_body_filter, True)
+                                                       bad_bodies, True)
 
     if return_collisions:
       return pose, collisions
@@ -40,7 +40,7 @@ class GraspingPoseGenerator(object):
       return pose
 
   def _get_min_col_grasping_pose(self, obj_to_grasp,
-                         bad_body_filter=None, ignore_collisions=False):
+                         bad_bodies=None, ignore_collisions=False):
     # generating grasps
     grasps = self._generate_grasps(obj_to_grasp)
     openravepy.raveLogInfo("I've got %d grasps" % len(grasps))
@@ -72,14 +72,17 @@ class GraspingPoseGenerator(object):
       if pose is None:
         continue
 
-      self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices());                    
+      self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices());
+
       collisions = utils.get_all_collisions(self.robot, self.env)
       # make sure collisions don't include any bad bodies
-      bad_bodies = []
-      if bad_body_filter is not None:
-        bad_bodies = filter(bad_body_filter, collisions)
-        if len(bad_bodies) != 0:
-          continue
+      bad_body_exists = False
+      for body in collisions:
+        if body in bad_bodies:
+          bad_body_exists = True
+          break;
+      if bad_body_exists:
+        continue
 
       if not ignore_collisions:
         best_pose = pose
