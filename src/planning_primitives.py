@@ -97,10 +97,11 @@ class Executor(object):
     def get_bad_bodies(self, obj_to_grasp):
         obj_name = obj_to_grasp.GetName()
 
-        obstructions = accessibility(self.obstruction_digraph).get(obj_name, None)
+        if doJointInterpretation:
+            obstructions = accessibility(self.obstruction_digraph).get(obj_name, None)
 
         future_objects = []
-        if obstructions is not None:
+        if doJointInterpretation and obstructions is not None:
             future_objects = obstructions
             future_objects.remove(obj_name)
 
