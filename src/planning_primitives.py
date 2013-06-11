@@ -10,6 +10,8 @@ from settings import *
 import sys
 import pdb
 import numpy
+from pygraph.classes.digraph import digraph
+from pygraph.algorithms.accessibility import accessibility
 
 from grasping_pose_generator import GraspingPoseGenerator, GraspingPoseError
 
@@ -57,6 +59,8 @@ class Executor(object):
         self.handled_objs = set()
 
         self.grasping_pose_generator = GraspingPoseGenerator(self.env)
+
+        self.obstruction_digraph = digraph()
         
         v = self.robot.GetActiveDOFValues()
         v[self.robot.GetJoint('torso_lift_joint').GetDOFIndex()]=1.0
@@ -90,9 +94,20 @@ class Executor(object):
                                    and (b.GetName() not in self.unMovableObjects)
         return filter(body_filter, self.env.GetBodies())
 
-    def get_bad_bodies(self):
-        futureObjects = set(self.objSequenceInPlan) - self.handled_objs
-        bad_body_filter = lambda b: (b.GetName() in futureObjects) \
+    def get_bad_bodies(self, obj_to_grasp):
+        obj_name = obj_to_grasp.GetName()
+
+        obstructions = accessibility(self.obstruction_digraph).get(obj_name, None)
+
+        future_objects = []
+        if obstructions is not None:
+            future_objects = obstructions
+            future_objects.remove(obj_name)
+
+        # print self.obstruction_digraph
+        # print obj_name, future_objects
+        # raw_input("!!")
+        bad_body_filter = lambda b: (b.GetName() in future_objects) \
                                  or (b.GetName() in self.unMovableObjects)
         return set(filter(bad_body_filter, self.env.GetBodies()))
 
@@ -651,7 +666,7 @@ class PlanParser(object):
              #                                             return_pose=True)
             pose = None
             torso_angle = None
-            sol, collision_list = self.grasping_pose_generator.get_grasping_pose(obj, self.executor.get_bad_bodies(), True)
+            sol, collision_list = self.grasping_pose_generator.get_grasping_pose(obj, self.executor.get_bad_bodies(obj), True)
 
             if sol is None:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)
@@ -663,6 +678,14 @@ class PlanParser(object):
             obst_list = "\n".join("(Obstructs %s %s %s)" %("gp_"+ object_to_grasp_name,
                                                            obstr, object_to_grasp_name) for obstr in collision_list)
             error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number, obst_list)
+            
+            # update obstruction directed graph
+            if not self.executor.obstruction_digraph.has_node(object_to_grasp_name):
+                self.executor.obstruction_digraph.add_node(object_to_grasp_name)
+            for obstr in collision_list:
+                if not self.executor.obstruction_digraph.has_node(obstr):
+                    self.executor.obstruction_digraph.add_node(obstr)
+                self.executor.obstruction_digraph.add_edge((obstr, object_to_grasp_name))
             return
         
         elif "heavy" in error.problem:
