@@ -17,28 +17,29 @@ class GraspingPoseGenerator(object):
     if cached_value is None:
       print "Collision free pose for object %s is not cached, \
              looking for a pose" % obj_name
-      pose, _ = self._get_grasping_pose(obj_to_grasp)
+      pose, _ = self._get_min_col_grasping_pose(obj_to_grasp)
       if pose is None:
         e = GraspingPoseError("No collision free grasping pose found")
         raise e
       # TODO: Enable caching later
       # self.col_free_grasping_pose_cache[obj_name] = pose
     else:
-      print "Collision free ose for object %s already cached" %  obj_name
+      print "Collision free pose for object %s already cached" %  obj_name
       pose = cached_value
 
     return pose
 
   def get_grasping_pose(self, obj_to_grasp,
                         bad_body_filter=None, return_collisions=False):
-    pose, collisions = self._get_grasping_pose(obj_to_grasp, bad_body_filter, True)
+    pose, collisions = self._get_min_col_grasping_pose(obj_to_grasp,
+                                                       bad_body_filter, True)
 
     if return_collisions:
       return pose, collisions
     else:
       return pose
 
-  def _get_grasping_pose(self, obj_to_grasp,
+  def _get_min_col_grasping_pose(self, obj_to_grasp,
                          bad_body_filter=None, ignore_collisions=False):
     # generating grasps
     grasps = self._generate_grasps(obj_to_grasp)
@@ -64,6 +65,9 @@ class GraspingPoseGenerator(object):
     
     pose = None
     collisions = []
+    best_pose = None
+    min_collisions = []
+    num_min_collisions = float('inf')
     for grasp in grasps:
       pose = self.manip.FindIKSolution(grasp, ik_options)
 
@@ -79,14 +83,16 @@ class GraspingPoseGenerator(object):
         if len(bad_bodies) != 0:
           continue
 
-      # found a good pose
-      break
+      if len(collisions) < num_min_collisions:
+        num_min_collisions = len(collisions)
+        min_collisions = collisions
+        best_pose = pose
 
     # restore removed obj_to_grasp and robot DOFs before returning
     self.env.AddKinBody(obj_to_grasp)
     self.robot.SetDOFValues(dof_orig)
 
-    return pose, [obj.GetName() for obj in collisions]
+    return best_pose, [obj.GetName() for obj in min_collisions]
 
   def _generate_grasps(self, obj, use_general_grasps=True):
     """
