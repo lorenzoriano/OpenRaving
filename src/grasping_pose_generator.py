@@ -63,8 +63,6 @@ class GraspingPoseGenerator(object):
     else:
       ik_options = openravepy.IkFilterOptions.CheckEnvCollisions
     
-    pose = None
-    collisions = []
     best_pose = None
     min_collisions = []
     num_min_collisions = float('inf')
@@ -82,6 +80,11 @@ class GraspingPoseGenerator(object):
         bad_bodies = filter(bad_body_filter, collisions)
         if len(bad_bodies) != 0:
           continue
+
+      if not ignore_collisions:
+        best_pose = pose
+        min_collisions = collisions
+        break
 
       if len(collisions) < num_min_collisions:
         num_min_collisions = len(collisions)
