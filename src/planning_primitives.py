@@ -142,93 +142,93 @@ class Executor(object):
         self.pause("Grasping object...")
         return
 
-        # update openrave
-        if use_ros:
-            self.pr2robot.update_rave()
+        # # update openrave
+        # if use_ros:
+        #     self.pr2robot.update_rave()
 
-        print "Grasping object ", obj_name
-        obj = self.env.GetKinBody(obj_name)
-        if obj is None:
-            raise ValueError("Object %s does not exist" % obj_name)
+        # print "Grasping object ", obj_name
+        # obj = self.env.GetKinBody(obj_name)
+        # if obj is None:
+        #     raise ValueError("Object %s does not exist" % obj_name)
         
-        cached_value = self.grasping_locations_cache.get(obj_name, None)
-        if cached_value is None:
-            print "Object %s is not cached, looking for a value" % obj_name
-            try:
-                pose, sol, torso_angle = generate_reaching_poses.get_collision_free_grasping_pose(
-                                                                                  self.getGoodBodies(),
-                                                                                  self.robot, 
-                                                                                  obj,
-                                                                                  max_trials=collision_free_grasping_samples
-                                                                                  )
-                self.grasping_locations_cache[obj_name] =  pose, sol, torso_angle
-            except generate_reaching_poses.GraspingPoseError:
-                e = ExecutingException("Object in collision")
-                e.robot = self.robot
-                e.object_to_grasp = obj
-                raise e
-        else:
-            print "Object %s already cached" %  obj_name
-            pose, sol, torso_angle = cached_value
+        # cached_value = self.grasping_locations_cache.get(obj_name, None)
+        # if cached_value is None:
+        #     print "Object %s is not cached, looking for a value" % obj_name
+        #     try:
+        #         pose, sol, torso_angle = generate_reaching_poses.get_collision_free_grasping_pose(
+        #                                                                           self.getGoodBodies(),
+        #                                                                           self.robot, 
+        #                                                                           obj,
+        #                                                                           max_trials=collision_free_grasping_samples
+        #                                                                           )
+        #         self.grasping_locations_cache[obj_name] =  pose, sol, torso_angle
+        #     except generate_reaching_poses.GraspingPoseError:
+        #         e = ExecutingException("Object in collision")
+        #         e.robot = self.robot
+        #         e.object_to_grasp = obj
+        #         raise e
+        # else:
+        #     print "Object %s already cached" %  obj_name
+        #     pose, sol, torso_angle = cached_value
         
-        if OpenRavePlanning:
-            test_grasp_move.move_arm(robot, pose, 'r')
+        # if OpenRavePlanning:
+        #     test_grasp_move.move_arm(robot, pose, 'r')
         
-        if use_ros:
-            # # object matching
-            detector, _ = detector_and_cluster_map
-            # index = cluster_map[obj_name]
+        # if use_ros:
+        #     # # object matching
+        #     detector, _ = detector_and_cluster_map
+        #     # index = cluster_map[obj_name]
 
-            # # generating grasps
-            # box_msg = detector.detect_bounding_box(detector.last_detection_msg.detection.clusters[index])
-            # desired_grasps = grasp_generator.generate_grasps(box_msg, 8)
-            # grasp_generator.draw_grasps(desired_grasps)
+        #     # # generating grasps
+        #     # box_msg = detector.detect_bounding_box(detector.last_detection_msg.detection.clusters[index])
+        #     # desired_grasps = grasp_generator.generate_grasps(box_msg, 8)
+        #     # grasp_generator.draw_grasps(desired_grasps)
 
-            # object matching
-            detector.detect()
-            box_msgs = []
-            for cluster in detector.last_detection_msg.detection.clusters:
-                box_msgs.append(detector.detect_bounding_box(cluster))
-            box_msg, index = utils.find_nearest_box(obj, box_msgs)
+        #     # object matching
+        #     detector.detect()
+        #     box_msgs = []
+        #     for cluster in detector.last_detection_msg.detection.clusters:
+        #         box_msgs.append(detector.detect_bounding_box(cluster))
+        #     box_msg, index = utils.find_nearest_box(obj, box_msgs)
 
-            # generating grasps
-            desired_grasps = grasp_generator.generate_grasps(box_msg, 16)
-            grasp_generator.draw_grasps(desired_grasps)
+        #     # generating grasps
+        #     desired_grasps = grasp_generator.generate_grasps(box_msg, 16)
+        #     grasp_generator.draw_grasps(desired_grasps)
 
-            # pickup
-            grabber = object_pickup.Grabber()
-            processing_reply = detector.call_collision_map_processing(detector.last_detection_msg)
+        #     # pickup
+        #     grabber = object_pickup.Grabber()
+        #     processing_reply = detector.call_collision_map_processing(detector.last_detection_msg)
             
-            # # reset planning scene
-            self.arm_mover.reset_collision_map()
-            self.arm_mover.update_planning_scene()
+        #     # # reset planning scene
+        #     self.arm_mover.reset_collision_map()
+        #     self.arm_mover.update_planning_scene()
 
-            res = grabber.pickup_object(processing_reply.graspable_objects[index],
-                                        processing_reply.collision_object_names[index],
-                                        processing_reply.collision_support_surface_name,
-                                        'right_arm',
-                                        desired_grasps=desired_grasps,
-                                        lift_desired_distance = 0.3)
-            if res is None:
-                e = ExecutingException("ROS pickup failed")
-                e.robot = self.robot
-                e.object_to_grasp = obj
-                raise e
+        #     res = grabber.pickup_object(processing_reply.graspable_objects[index],
+        #                                 processing_reply.collision_object_names[index],
+        #                                 processing_reply.collision_support_surface_name,
+        #                                 'right_arm',
+        #                                 desired_grasps=desired_grasps,
+        #                                 lift_desired_distance = 0.3)
+        #     if res is None:
+        #         e = ExecutingException("ROS pickup failed")
+        #         e.robot = self.robot
+        #         e.object_to_grasp = obj
+        #         raise e
 
-            # update openrave
-            if use_ros:
-                self.pr2robot.update_rave()
-        else:
-            self.pause("Moving to location")
-            self.robot.SetTransform(pose)
+        #     # update openrave
+        #     if use_ros:
+        #         self.pr2robot.update_rave()
+        # else:
+        #     self.pause("Moving to location")
+        #     self.robot.SetTransform(pose)
             
-            self.pause("Moving arm")
-            self.robot.SetDOFValues([torso_angle],
-                                    [self.robot.GetJointIndex('torso_lift_joint')])        
-            self.robot.SetDOFValues(sol,
-                                    self.robot.GetActiveManipulator().GetArmIndices())
+        #     self.pause("Moving arm")
+        #     self.robot.SetDOFValues([torso_angle],
+        #                             [self.robot.GetJointIndex('torso_lift_joint')])        
+        #     self.robot.SetDOFValues(sol,
+        #                             self.robot.GetActiveManipulator().GetArmIndices())
 
-        self.robot.Grab(obj)
+        # self.robot.Grab(obj)
     
     def putdown(self, obj_name, table_name, _unused1):
         
@@ -626,13 +626,13 @@ class PlanParser(object):
         print "Handling an error"
         if "collision" in error.problem:
             print "Got a collision error, finding occlusions"
-            if not doJointInterpretation:
-                body_filter = lambda b: b.GetName().startswith("random") or\
-                                        b.GetName().startswith('object')
-            else:
-                futureObjects = set(self.executor.objSequenceInPlan) - self.handled_objs
-                body_filter = lambda b: (b.GetName() not in futureObjects) \
-                                       and (b.GetName() not in self.executor.unMovableObjects)
+            # if not doJointInterpretation:
+            #     body_filter = lambda b: b.GetName().startswith("random") or\
+            #                             b.GetName().startswith('object')
+            # else:
+            #     futureObjects = set(self.executor.objSequenceInPlan) - self.handled_objs
+            #     body_filter = lambda b: (b.GetName() not in futureObjects) \
+            #                            and (b.GetName() not in self.executor.unMovableObjects)
                 
              # (pose,
              # sol, torso_angle,
