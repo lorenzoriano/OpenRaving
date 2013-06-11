@@ -10,37 +10,33 @@ class GraspingPoseGenerator(object):
     self.manip = self.robot.GetActiveManipulator()
     self.col_free_grasping_pose_cache = {}
 
-  def get_col_free_grasping_pose(self, obj_to_grasp):
+  def get_grasping_pose(self, obj_to_grasp, col_free=True, bad_bodies=None):
     obj_name = obj_to_grasp.GetName()
 
     cached_value = self.col_free_grasping_pose_cache.get(obj_name, None)
     if cached_value is None:
-      print "Collision free pose for object %s is not cached, \
-             looking for a pose" % obj_name
-      pose, _ = self._get_min_col_grasping_pose(obj_to_grasp)
+      # print "Collision free pose for object %s is not cached, \
+      #        looking for a pose" % obj_name
+      pose, collisions = self._get_min_col_grasping_pose(obj_to_grasp,
+                                                         col_free,
+                                                         bad_bodies)
       if pose is None:
-        e = GraspingPoseError("No collision free grasping pose found")
+        if col_free:
+          e = GraspingPoseError("No collision free grasping pose found")
+        else:
+          e = GraspingPoseError("No grasping pose found")
         raise e
       # TODO: Enable caching later
       # self.col_free_grasping_pose_cache[obj_name] = pose
     else:
-      print "Collision free pose for object %s already cached" %  obj_name
-      pose = cached_value
+      # print "Collision free pose for object %s already cached" %  obj_name
+      # pose = cached_value
+      pass
 
-    return pose
+    return pose, collisions
 
-  def get_grasping_pose(self, obj_to_grasp,
-                        bad_bodies=None, return_collisions=False):
-    pose, collisions = self._get_min_col_grasping_pose(obj_to_grasp,
-                                                       bad_bodies, True)
-
-    if return_collisions:
-      return pose, collisions
-    else:
-      return pose
-
-  def _get_min_col_grasping_pose(self, obj_to_grasp,
-                         bad_bodies=None, ignore_collisions=False):
+  def _get_min_col_grasping_pose(self, obj_to_grasp, col_free=True,
+                                 bad_bodies=None):
     # generating grasps
     grasps = self._generate_grasps(obj_to_grasp)
     openravepy.raveLogInfo("I've got %d grasps" % len(grasps))
@@ -58,10 +54,10 @@ class GraspingPoseGenerator(object):
     self.env.Remove(obj_to_grasp)
 
     # finding collision free grasping pose
-    if ignore_collisions:
-      ik_options = openravepy.IkFilterOptions.IgnoreEndEffectorCollisions
-    else:
+    if col_free:
       ik_options = openravepy.IkFilterOptions.CheckEnvCollisions
+    else:
+      ik_options = openravepy.IkFilterOptions.IgnoreEndEffectorCollisions
     
     best_pose = None
     min_collisions = []
@@ -84,7 +80,7 @@ class GraspingPoseGenerator(object):
       if bad_body_exists:
         continue
 
-      if not ignore_collisions:
+      if col_free:
         best_pose = pose
         min_collisions = collisions
         break

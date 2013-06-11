@@ -151,7 +151,7 @@ class Executor(object):
     def grasp(self, obj_name, _unused1, _unused2):
         obj = self.env.GetKinBody(obj_name)
         try:
-            pose = self.grasping_pose_generator.get_col_free_grasping_pose(obj)
+            pose, _ = self.grasping_pose_generator.get_grasping_pose(obj)
             self.robot.SetDOFValues(pose,
                                     self.robot.GetActiveManipulator().GetArmIndices())
             self.robot.Grab(obj)
@@ -666,7 +666,7 @@ class PlanParser(object):
              #                                             return_pose=True)
             pose = None
             torso_angle = None
-            sol, collision_list = self.grasping_pose_generator.get_grasping_pose(obj, self.executor.get_bad_bodies(obj), True)
+            sol, collision_list = self.grasping_pose_generator.get_grasping_pose(obj, False, self.executor.get_bad_bodies(obj))
 
             if sol is None:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)
