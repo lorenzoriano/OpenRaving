@@ -13,18 +13,14 @@ class ObjectMover(object):
   def pickup(self, obj_to_pickup):
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj_to_pickup)
 
-    pose, _ = self.get_grasping_pose(obj_to_pickup, gmodel=gmodel)
-    
-    dof_orig = self.robot.GetActiveDOFValues()
-    dof_copy = list(dof_orig)
-    gripper_joint_index = self.robot.GetJoint('r_gripper_l_finger_joint').GetDOFIndex()
-    dof_copy[gripper_joint_index] = 0.54
-    self.robot.SetDOFValues(dof_copy)
+    pose, grasp, _ = self.get_grasping_pose(obj_to_pickup, gmodel=gmodel)
+
+    gmodel.setPreshape(grasp)
 
     basemanip = openravepy.interfaces.BaseManipulation(self.robot)
     basemanip.MoveManipulator(goal=pose)
 
-    self.pause("Grasping object...")
+    raw_input("Grasping object...")
     self.robot.Grab(obj_to_pickup)
 
   def get_grasping_pose(self, obj_to_grasp, col_free=True, bad_bodies=None, gmodel=None):
@@ -34,9 +30,9 @@ class ObjectMover(object):
     if cached_value is None:
       # print "Collision free pose for object %s is not cached, \
       #        looking for a pose" % obj_name
-      pose, collisions = self._get_min_col_grasping_pose(obj_to_grasp,
+      pose, grasp, collisions = self._get_min_col_grasping_pose(obj_to_grasp,
                                                          col_free,
-                                                         bad_bodies, gmodel=None)
+                                                         bad_bodies, gmodel=gmodel)
       if pose is None:
         if col_free:
           e = ObjectMoveError("No collision free grasping pose found")
@@ -50,12 +46,12 @@ class ObjectMover(object):
       # pose = cached_value
       pass
 
-    return pose, collisions
+    return pose, grasp, collisions
 
   def _get_min_col_grasping_pose(self, obj_to_grasp, col_free=True,
                                  bad_bodies=None, gmodel=None):
     # generating grasps
-    grasps = self._generate_grasps(obj_to_grasp)
+    grasps = self._generate_grasps(obj_to_grasp, gmodel=None)
     openravepy.raveLogInfo("I've got %d grasps" % len(grasps))
     if len(grasps) == 0:
       return None, []
@@ -77,10 +73,12 @@ class ObjectMover(object):
       ik_options = openravepy.IkFilterOptions.IgnoreEndEffectorCollisions
     
     best_pose = None
+    best_grasp = None
     min_collisions = []
     num_min_collisions = float('inf')
     for grasp in grasps:
-      pose = self.manip.FindIKSolution(grasp, ik_options)
+      grasp_transform = gmodel.getGlobalGraspTransform(grasp)
+      pose = self.manip.FindIKSolution(grasp_transform, ik_options)
 
       if pose is None:
         continue
@@ -100,18 +98,20 @@ class ObjectMover(object):
       if col_free:
         best_pose = pose
         min_collisions = collisions
+        best_grasp = grasp
         break
 
       if len(collisions) < num_min_collisions:
         num_min_collisions = len(collisions)
         min_collisions = collisions
         best_pose = pose
+        best_grasp = grasp
 
     # restore removed obj_to_grasp and robot DOFs before returning
     self.env.AddKinBody(obj_to_grasp)
     self.robot.SetDOFValues(dof_orig)
 
-    return best_pose, [obj.GetName() for obj in min_collisions]
+    return best_pose, best_grasp, [obj.GetName() for obj in min_collisions]
 
   def _generate_grasps(self, obj, use_general_grasps=True, gmodel=None):
     """
@@ -150,7 +150,8 @@ class ObjectMover(object):
     np.random.shuffle(validgrasps)
     
     openravepy.raveLogInfo("Number of valid grasps: %d" % len(validgrasps))
-    return [gmodel.getGlobalGraspTransform(grasp) for grasp in validgrasps]
+    return validgrasps
+    # return [gmodel.getGlobalGraspTransform(grasp) for grasp in validgrasps]
 
 class ObjectMoveError(Exception):
   pass
