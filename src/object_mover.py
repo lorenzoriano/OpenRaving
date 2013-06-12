@@ -50,7 +50,20 @@ class ObjectMover(object):
         print("Got a trajectory!")
       except:
         print("No collision-free trajetory for this pose. Trying again...")
+      
       return traj
+
+    # No collision free trajectory found.
+    grasping_poses = self._get_grasping_poses(obj_to_grasp, gmodel,
+                                              col_free=False)
+    if not grasping_poses:
+      e = ObjectMoveError("Object %s out of reach!" % obj_to_grasp.GetName())
+      raise e
+    else:
+      pose, grasp, collisions = grasping_poses.next() # TODO: temporarily gets first
+      e = ObjectMoveError("No collision free trajectory found!")
+      e.collision_list = [obj.GetName() for obj in collisions]
+      raise e
 
   # def _get_grasping_pose(self, obj_to_grasp, gmodel, col_free=True, bad_bodies=[]):
   #   obj_name = obj_to_grasp.GetName()
