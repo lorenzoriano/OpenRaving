@@ -25,14 +25,17 @@ class ObjectMover(object):
 
   def get_grasping_pose(self, obj_to_grasp, col_free=True, bad_bodies=None, gmodel=None):
     obj_name = obj_to_grasp.GetName()
+    
+    if gmodel is None:
+      gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj_to_grasp)
 
     cached_value = self.col_free_grasping_pose_cache.get(obj_name, None)
     if cached_value is None:
       # print "Collision free pose for object %s is not cached, \
       #        looking for a pose" % obj_name
-      pose, grasp, collisions = self._get_min_col_grasping_pose(obj_to_grasp,
+      pose, grasp, collisions = self._get_min_col_grasping_pose(obj_to_grasp, gmodel,
                                                          col_free,
-                                                         bad_bodies, gmodel=gmodel)
+                                                         bad_bodies)
       if pose is None:
         if col_free:
           e = ObjectMoveError("No collision free grasping pose found")
@@ -48,10 +51,10 @@ class ObjectMover(object):
 
     return pose, grasp, collisions
 
-  def _get_min_col_grasping_pose(self, obj_to_grasp, col_free=True,
-                                 bad_bodies=None, gmodel=None):
+  def _get_min_col_grasping_pose(self, obj_to_grasp, gmodel, col_free=True,
+                                 bad_bodies=None):
     # generating grasps
-    grasps = self._generate_grasps(obj_to_grasp, gmodel=None)
+    grasps = self._generate_grasps(obj_to_grasp, gmodel)
     openravepy.raveLogInfo("I've got %d grasps" % len(grasps))
     if len(grasps) == 0:
       return None, []
@@ -71,7 +74,7 @@ class ObjectMover(object):
       ik_options = openravepy.IkFilterOptions.CheckEnvCollisions
     else:
       ik_options = openravepy.IkFilterOptions.IgnoreEndEffectorCollisions
-    
+
     best_pose = None
     best_grasp = None
     min_collisions = []
@@ -113,7 +116,7 @@ class ObjectMover(object):
 
     return best_pose, best_grasp, [obj.GetName() for obj in min_collisions]
 
-  def _generate_grasps(self, obj, use_general_grasps=True, gmodel=None):
+  def _generate_grasps(self, obj, gmodel, use_general_grasps=True):
     """
     Returns a list with all the valid grasps for object obj.
 
@@ -132,9 +135,6 @@ class ObjectMover(object):
         self.rolls = np.arange(0.49*np.pi, 0.51*np.pi, 0.25*np.pi)
         self.directiondelta = 0.0
         pass
-    
-    if gmodel is None:
-      gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
 
     if use_general_grasps:
       gmodel.grasps = utils.side_cylinder_pre_grasps

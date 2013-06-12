@@ -576,7 +576,7 @@ class PlanParser(object):
              #                                             return_pose=True)
             pose = None
             torso_angle = None
-            sol, collision_list = self.object_mover.get_grasping_pose(obj, False, self.executor.get_bad_bodies(obj))
+            sol, _, collision_list = self.object_mover.get_grasping_pose(obj, False, self.executor.get_bad_bodies(obj))
 
             if sol is None:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)
