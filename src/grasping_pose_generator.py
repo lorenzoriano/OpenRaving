@@ -120,7 +120,6 @@ class GraspingPoseGenerator(object):
 
     if use_general_grasps:
       gmodel.grasps = utils.side_cylinder_pre_grasps
-      np.random.shuffle(gmodel.grasps)
     else:
       if not gmodel.load():
         openravepy.raveLogInfo("Generating grasping model...")
@@ -130,7 +129,8 @@ class GraspingPoseGenerator(object):
     validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
                            checkik=True,
                            checkgrasper=False)
-
+    np.random.shuffle(validgrasps)
+    
     openravepy.raveLogInfo("Number of valid grasps: %d" % len(validgrasps))
     return [gmodel.getGlobalGraspTransform(grasp) for grasp in validgrasps]
 
