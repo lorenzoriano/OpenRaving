@@ -12,24 +12,45 @@ class ObjectMover(object):
 
   def pickup(self, obj):
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
-    pose, grasp, _ = self._get_grasping_pose(obj, gmodel)
 
     # begin pickup actions
     PLANNER = True
     if PLANNER:
-      gmodel.setPreshape(grasp)
-      basemanip = openravepy.interfaces.BaseManipulation(self.robot)
-      print("Calculating trajectory...")
-      traj = basemanip.MoveManipulator(goal=pose, execute=False,
-                                       outputtrajobj=True)
+      traj = self._get_grasping_trajectory(obj, gmodel)
       print("Executing trajectory...")
       self.robot.GetController().SetPath(traj)
       self.robot.WaitForController(0)
+      print("Trajectory execution complete!")
     else:
+      pose, grasp, _ = self._get_grasping_pose(obj, gmodel)
       self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices())
 
     print("Grasping object...")
     self.robot.Grab(obj)
+
+  def _get_grasping_trajectory(self, obj_to_grasp, gmodel):
+    """
+    Finds a valid grasping trajectory or raises an ObjectMoveError
+    if a valid trajectory cannot be found
+
+    Parameters:
+    obj_to_grasp: Object for which to compute a grasping trajectory
+    gmodel: An OpenRave GraspingModel object
+    
+    Returns:
+    An OpenRave trajectory object
+    """
+    for pose, grasp, _ in self._get_grasping_poses(obj_to_grasp, gmodel):
+      gmodel.setPreshape(grasp)
+      basemanip = openravepy.interfaces.BaseManipulation(self.robot)
+      print("Calculating trajectory...")
+      try:
+        traj = basemanip.MoveManipulator(goal=pose, execute=False,
+                                         outputtrajobj=True)
+        print("Got a trajectory!")
+      except:
+        print("No collision-free trajetory for this pose. Trying again...")
+      return traj
 
   def _get_grasping_pose(self, obj_to_grasp, gmodel, col_free=True, bad_bodies=[]):
     obj_name = obj_to_grasp.GetName()
@@ -60,6 +81,53 @@ class ObjectMover(object):
       pass
 
     return pose, grasp, collisions
+
+  def _get_grasping_poses(self, obj_to_grasp, gmodel, col_free=True):
+    # generating grasps
+    grasps = self._generate_grasps(obj_to_grasp, gmodel)
+    openravepy.raveLogInfo("I've got %d grasps" % len(grasps))
+    if len(grasps) == 0:
+      yield None, None, []
+
+    # finding collision free grasping pose
+    if col_free:
+      ik_options = openravepy.IkFilterOptions.CheckEnvCollisions
+    else:
+      ik_options = openravepy.IkFilterOptions.IgnoreEndEffectorCollisions
+
+    for grasp in grasps:
+      # open gripper when checking for collisions
+      dof_orig = self.robot.GetActiveDOFValues()
+      dof_copy = list(dof_orig)
+      gripper_joint_index = self.robot.GetJoint('r_gripper_l_finger_joint').GetDOFIndex()
+      dof_copy[gripper_joint_index] = 0.54
+      self.robot.SetDOFValues(dof_copy)
+
+      # remove obj_to_grasp from environment when checking for collisions
+      self.env.Remove(obj_to_grasp)
+
+      grasp_transform = gmodel.getGlobalGraspTransform(grasp)
+      pose = self.manip.FindIKSolution(grasp_transform, ik_options)
+
+      if pose is None:
+        continue
+
+      self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices());
+
+      collisions = utils.get_all_collisions(self.robot, self.env)
+      # make sure collisions don't include any bad bodies
+      # bad_body_exists = False
+      # for body in collisions:
+      #   if body in bad_bodies:
+      #     bad_body_exists = True
+      #     break;
+      # if bad_body_exists:
+      #   continue
+
+      # restore removed obj_to_grasp and robot DOFs before yielding
+      self.env.AddKinBody(obj_to_grasp)
+      self.robot.SetDOFValues(dof_orig)
+      yield pose, grasp, collisions
 
   def _get_min_col_grasping_pose(self, obj_to_grasp, gmodel, col_free=True,
                                  bad_bodies=None):
