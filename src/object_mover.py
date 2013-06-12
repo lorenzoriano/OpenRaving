@@ -14,16 +14,12 @@ class ObjectMover(object):
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
 
     # begin pickup actions
-    PLANNER = True
-    if PLANNER:
-      traj = self._get_grasping_trajectory(obj, gmodel)
-      print("Executing trajectory...")
-      self.robot.GetController().SetPath(traj)
-      self.robot.WaitForController(0)
-      print("Trajectory execution complete!")
-    else:
-      pose, grasp, _ = self._get_grasping_pose(obj, gmodel)
-      self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices())
+    traj = self._get_grasping_trajectory(obj, gmodel)
+    print("Executing trajectory...")
+    self.robot.GetController().SetPath(traj)
+    self.robot.WaitForController(0)
+    self.robot.GetController().Reset()
+    print("Trajectory execution complete!")
 
     print("Grasping object...")
     self.robot.Grab(obj)
