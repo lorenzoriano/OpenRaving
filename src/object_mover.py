@@ -15,15 +15,20 @@ class ObjectMover(object):
     pose, grasp, _ = self._get_grasping_pose(obj, gmodel)
 
     # begin pickup actions
-    PLANNER = False
+    PLANNER = True
     if PLANNER:
       gmodel.setPreshape(grasp)
       basemanip = openravepy.interfaces.BaseManipulation(self.robot)
-      basemanip.MoveManipulator(goal=pose)
+      print("Calculating trajectory...")
+      traj = basemanip.MoveManipulator(goal=pose, execute=False,
+                                       outputtrajobj=True)
+      print("Executing trajectory...")
+      self.robot.GetController().SetPath(traj)
+      self.robot.WaitForController(0)
     else:
       self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices())
 
-    raw_input("Grasping object...")
+    print("Grasping object...")
     self.robot.Grab(obj)
 
   def _get_grasping_pose(self, obj_to_grasp, gmodel, col_free=True, bad_bodies=[]):
