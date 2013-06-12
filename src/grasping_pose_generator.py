@@ -112,7 +112,7 @@ class GraspingPoseGenerator(object):
         self.delta = 0.0
         self.normalanglerange = 0.0
         self.standoffs = [0]
-        self.rolls = np.arange(0, np.pi, 0.25*np.pi)
+        self.rolls = np.arange(0.49*np.pi, 0.51*np.pi, 0.25*np.pi)
         self.directiondelta = 0.0
         pass
         
