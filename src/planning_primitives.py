@@ -13,7 +13,7 @@ import numpy
 from pygraph.classes.digraph import digraph
 from pygraph.algorithms.accessibility import accessibility
 
-from grasping_pose_generator import GraspingPoseGenerator, GraspingPoseError
+from object_mover import ObjectMover, ObjectMoveError
 
 if OpenRavePlanning:
     from openrave_tests import test_grasp_move
@@ -58,7 +58,7 @@ class Executor(object):
         self.objSequenceInPlan = []
         self.handled_objs = set()
 
-        self.grasping_pose_generator = GraspingPoseGenerator(self.env)
+        self.object_mover = ObjectMover(self.env)
 
         self.obstruction_digraph = digraph()
         
@@ -152,11 +152,12 @@ class Executor(object):
     def grasp(self, obj_name, _unused1, _unused2):
         obj = self.env.GetKinBody(obj_name)
         try:
-            pose, _ = self.grasping_pose_generator.get_grasping_pose(obj)
-            self.robot.SetDOFValues(pose,
-                                    self.robot.GetActiveManipulator().GetArmIndices())
-            self.robot.Grab(obj)
-        except GraspingPoseError:
+            self.object_mover.pickup(obj)
+            # pose, _ = self.object_mover.get_grasping_pose(obj)
+            # self.robot.SetDOFValues(pose,
+            #                         self.robot.GetActiveManipulator().GetArmIndices())
+            # self.robot.Grab(obj)
+        except ObjectMoveError:
             e = ExecutingException("Object in collision")
             e.robot = self.robot
             e.object_to_grasp = obj
@@ -184,7 +185,7 @@ class Executor(object):
         #                                                                           max_trials=collision_free_grasping_samples
         #                                                                           )
         #         self.grasping_locations_cache[obj_name] =  pose, sol, torso_angle
-        #     except generate_reaching_poses.GraspingPoseError:
+        #     except generate_reaching_poses.ObjectMoveError:
         #         e = ExecutingException("Object in collision")
         #         e.robot = self.robot
         #         e.object_to_grasp = obj
@@ -283,7 +284,7 @@ class Executor(object):
                      only_reachable=False,
                      max_trials =1000
                  )
-            except generate_reaching_poses.GraspingPoseError:
+            except generate_reaching_poses.ObjectMoveError:
                 raise ExecutingException("Putting down on location has problems!")            
         
         else:           
@@ -296,7 +297,7 @@ class Executor(object):
                                                                                           self.robot, 
                                                                                           table,
                                                                                           )
-            except generate_reaching_poses.GraspingPoseError, e:
+            except generate_reaching_poses.ObjectMoveError, e:
                 raise e
         
         if use_ros:
@@ -409,7 +410,7 @@ class Executor(object):
                  self.robot,
                  T,
              )
-        except generate_reaching_poses.GraspingPoseError:
+        except generate_reaching_poses.ObjectMoveError:
             raise ExecutingException("Putting down on tray has problems!")
         
         self.pause("Going to the tray")
@@ -527,7 +528,7 @@ class PlanParser(object):
         
         self.handled_objs = set()
 
-        self.grasping_pose_generator = GraspingPoseGenerator(self.executor.env)
+        self.object_mover = self.executor.object_mover
     
     def updateHandledObjs(self, args):
         self.executor.handled_objs = self.handled_objs
@@ -667,7 +668,7 @@ class PlanParser(object):
              #                                             return_pose=True)
             pose = None
             torso_angle = None
-            sol, collision_list = self.grasping_pose_generator.get_grasping_pose(obj, False, self.executor.get_bad_bodies(obj))
+            sol, collision_list = self.object_mover.get_grasping_pose(obj, False, self.executor.get_bad_bodies(obj))
 
             if sol is None:
                 raise ExecutingException("No way I can grasp that object!", error.line_number)
