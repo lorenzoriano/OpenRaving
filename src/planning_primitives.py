@@ -153,10 +153,11 @@ class Executor(object):
         obj = self.env.GetKinBody(obj_name)
         try:
             self.object_mover.pickup(obj)
-        except ObjectMoveError:
+        except ObjectMoveError, error:
             e = ExecutingException("Object in collision")
             e.robot = self.robot
             e.object_to_grasp = obj
+            e.collision_list = error.collision_list
             raise e
         return
     
@@ -576,13 +577,14 @@ class PlanParser(object):
              #                                             return_pose=True)
             pose = None
             torso_angle = None
-            sol, _, collision_list = self.object_mover.get_grasping_pose(obj, False, self.executor.get_bad_bodies(obj))
+            # sol, _, collision_list = self.object_mover.get_grasping_pose(obj, False, self.executor.get_bad_bodies(obj))
 
-            if sol is None:
-                raise ExecutingException("No way I can grasp that object!", error.line_number)
-            
+            # if sol is None:
+            #     raise ExecutingException("No way I can grasp that object!", error.line_number)
+            collision_list = error.collision_list
+
             #updating the executor cache
-            self.executor.grasping_locations_cache[obj.GetName()] =  pose, sol, torso_angle
+            # self.executor.grasping_locations_cache[obj.GetName()] =  pose, sol, torso_angle
             
             object_to_grasp_name = error.object_to_grasp.GetName()
             obst_list = "\n".join("(Obstructs %s %s %s)" %("gp_"+ object_to_grasp_name,

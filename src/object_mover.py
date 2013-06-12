@@ -10,25 +10,25 @@ class ObjectMover(object):
     self.manip = self.robot.GetActiveManipulator()
     self.col_free_grasping_pose_cache = {}
 
-  def pickup(self, obj_to_pickup):
-    gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj_to_pickup)
+  def pickup(self, obj):
+    gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
+    pose, grasp, _ = self._get_grasping_pose(obj, gmodel)
 
-    pose, grasp, _ = self.get_grasping_pose(obj_to_pickup, gmodel=gmodel)
-
-    gmodel.setPreshape(grasp)
-
-    basemanip = openravepy.interfaces.BaseManipulation(self.robot)
-    basemanip.MoveManipulator(goal=pose)
+    # begin pickup actions
+    PLANNER = False
+    if PLANNER:
+      gmodel.setPreshape(grasp)
+      basemanip = openravepy.interfaces.BaseManipulation(self.robot)
+      basemanip.MoveManipulator(goal=pose)
+    else:
+      self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices())
 
     raw_input("Grasping object...")
-    self.robot.Grab(obj_to_pickup)
+    self.robot.Grab(obj)
 
-  def get_grasping_pose(self, obj_to_grasp, col_free=True, bad_bodies=None, gmodel=None):
+  def _get_grasping_pose(self, obj_to_grasp, gmodel, col_free=True, bad_bodies=[]):
     obj_name = obj_to_grasp.GetName()
     
-    if gmodel is None:
-      gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj_to_grasp)
-
     cached_value = self.col_free_grasping_pose_cache.get(obj_name, None)
     if cached_value is None:
       # print "Collision free pose for object %s is not cached, \
@@ -38,7 +38,12 @@ class ObjectMover(object):
                                                          bad_bodies)
       if pose is None:
         if col_free:
+          pose, grasp, collisions = self._get_grasping_pose(obj_to_grasp,
+                                                            gmodel,
+                                                            col_free=False,
+                                                            bad_bodies=bad_bodies)
           e = ObjectMoveError("No collision free grasping pose found")
+          e.collision_list = collisions
         else:
           e = ObjectMoveError("No grasping pose found")
         raise e
