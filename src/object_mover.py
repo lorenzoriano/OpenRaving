@@ -8,7 +8,7 @@ class ObjectMover(object):
     self.env = env
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
-    self.col_free_grasping_pose_cache = {}
+    self.grasping_pose_cache = {}
 
   def pickup(self, obj):
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
@@ -36,6 +36,25 @@ class ObjectMover(object):
     Returns:
     An OpenRave trajectory object
     """
+    obj_name = obj_to_grasp.GetName()
+
+    pose_and_grasp = self.grasping_pose_cache.get(obj_name, None)
+    if pose_and_grasp is not None:
+      print("Pose and grasp for %s in cache!" % obj_name)
+      pose, grasp = pose_and_grasp
+      gmodel.setPreshape(grasp)
+      basemanip = openravepy.interfaces.BaseManipulation(self.robot)
+      print("Calculating trajectory...")
+      try:
+        traj = basemanip.MoveManipulator(goal=pose, execute=False,
+                                         outputtrajobj=True)
+        print("Got a trajectory!")
+        return traj
+      except:
+        print("No collision-free trajetory for this pose.\
+               Clearing cache for this object")
+        del self.grasping_pose_cache[obj_name]
+
     for pose, grasp, _ in self._get_grasping_poses(obj_to_grasp, gmodel):
       gmodel.setPreshape(grasp)
       basemanip = openravepy.interfaces.BaseManipulation(self.robot)
@@ -44,19 +63,20 @@ class ObjectMover(object):
         traj = basemanip.MoveManipulator(goal=pose, execute=False,
                                          outputtrajobj=True)
         print("Got a trajectory!")
+        return traj
       except:
         print("No collision-free trajetory for this pose. Trying again...")
       
-      return traj
-
     # No collision free trajectory found.
     grasping_poses = self._get_grasping_poses(obj_to_grasp, gmodel,
                                               col_free=False)
     if not grasping_poses:
-      e = ObjectMoveError("Object %s out of reach!" % obj_to_grasp.GetName())
+      e = ObjectMoveError("Object %s out of reach!" % obj_name)
       raise e
     else:
       pose, grasp, collisions = grasping_poses.next() # TODO: temporarily gets first
+      self.grasping_pose_cache[obj_name] = (pose, grasp)
+
       e = ObjectMoveError("No collision free trajectory found!")
       e.collision_list = [obj.GetName() for obj in collisions]
       raise e
