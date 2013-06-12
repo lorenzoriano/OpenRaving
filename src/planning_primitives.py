@@ -162,7 +162,6 @@ class Executor(object):
             e.robot = self.robot
             e.object_to_grasp = obj
             raise e
-        self.pause("Grasping object...")
         return
 
         # # update openrave
@@ -254,7 +253,8 @@ class Executor(object):
         # self.robot.Grab(obj)
     
     def putdown(self, obj_name, table_name, _unused1):
-        
+        #return
+
         print "Putting down object %s on %s" %(obj_name, table_name)
         obj = self.env.GetKinBody(obj_name)
         if obj is None:
