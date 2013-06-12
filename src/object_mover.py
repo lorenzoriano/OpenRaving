@@ -14,9 +14,7 @@ class ObjectMover(object):
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj_to_pickup)
 
     pose, _ = self.get_grasping_pose(obj_to_pickup, gmodel=gmodel)
-    # self.robot.SetDOFValues(pose,
-    #                         self.robot.GetActiveManipulator().GetArmIndices())
-
+    
     dof_orig = self.robot.GetActiveDOFValues()
     dof_copy = list(dof_orig)
     gripper_joint_index = self.robot.GetJoint('r_gripper_l_finger_joint').GetDOFIndex()
