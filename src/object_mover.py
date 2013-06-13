@@ -130,13 +130,16 @@ class ObjectMover(object):
       pose = self.manip.FindIKSolution(grasp_transform, ik_options)
 
       if pose is None:
+        # restore removed obj_to_grasp and robot DOFs
+        self.env.AddKinBody(obj_to_grasp)
+        self.robot.SetDOFValues(dof_orig)
         continue
 
       self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices());
 
       collisions = utils.get_all_collisions(self.robot, self.env)
 
-      # restore removed obj_to_grasp and robot DOFs after collision check
+      # restore removed obj_to_grasp and robot DOFs
       self.env.AddKinBody(obj_to_grasp)
       self.robot.SetDOFValues(dof_orig)
 
