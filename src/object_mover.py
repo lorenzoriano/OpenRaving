@@ -88,36 +88,6 @@ class ObjectMover(object):
       e.collision_list = [obj.GetName() for obj in collisions]
       raise e
 
-  # def _get_grasping_pose(self, obj_to_grasp, gmodel, col_free=True, bad_bodies=[]):
-  #   obj_name = obj_to_grasp.GetName()
-    
-  #   cached_value = self.col_free_grasping_pose_cache.get(obj_name, None)
-  #   if cached_value is None:
-  #     # print "Collision free pose for object %s is not cached, \
-  #     #        looking for a pose" % obj_name
-  #     pose, grasp, collisions = self._get_min_col_grasping_pose(obj_to_grasp, gmodel,
-  #                                                        col_free,
-  #                                                        bad_bodies)
-  #     if pose is None:
-  #       if col_free:
-  #         pose, grasp, collisions = self._get_grasping_pose(obj_to_grasp,
-  #                                                           gmodel,
-  #                                                           col_free=False,
-  #                                                           bad_bodies=bad_bodies)
-  #         e = ObjectMoveError("No collision free grasping pose found")
-  #         e.collision_list = collisions
-  #       else:
-  #         e = ObjectMoveError("No grasping pose found")
-  #       raise e
-  #     # TODO: Enable caching later
-  #     # self.col_free_grasping_pose_cache[obj_name] = pose
-  #   else:
-  #     # print "Collision free pose for object %s already cached" %  obj_name
-  #     # pose = cached_value
-  #     pass
-
-  #   return pose, grasp, collisions
-
   def _get_min_col_grasping_pose(self, obj_to_grasp, gmodel):
     min_col = float('inf')
     best_pose = None
@@ -180,72 +150,7 @@ class ObjectMover(object):
         continue
 
       yield pose, grasp, collisions
-
-  # def _get_min_col_grasping_pose(self, obj_to_grasp, gmodel, col_free=True,
-  #                                bad_bodies=None):
-  #   # generating grasps
-  #   grasps = self._generate_grasps(obj_to_grasp, gmodel)
-  #   openravepy.raveLogInfo("I've got %d grasps" % len(grasps))
-  #   if len(grasps) == 0:
-  #     return None, []
-
-  #   # open gripper when checking for collisions
-  #   dof_orig = self.robot.GetActiveDOFValues()
-  #   dof_copy = list(dof_orig)
-  #   gripper_joint_index = self.robot.GetJoint('r_gripper_l_finger_joint').GetDOFIndex()
-  #   dof_copy[gripper_joint_index] = 0.54
-  #   self.robot.SetDOFValues(dof_copy)
-
-  #   # remove obj_to_grasp from environment when checking for collisions
-  #   self.env.Remove(obj_to_grasp)
-
-  #   # finding collision free grasping pose
-  #   if col_free:
-  #     ik_options = openravepy.IkFilterOptions.CheckEnvCollisions
-  #   else:
-  #     ik_options = openravepy.IkFilterOptions.IgnoreEndEffectorCollisions
-
-  #   best_pose = None
-  #   best_grasp = None
-  #   min_collisions = []
-  #   num_min_collisions = float('inf')
-  #   for grasp in grasps:
-  #     grasp_transform = gmodel.getGlobalGraspTransform(grasp)
-  #     pose = self.manip.FindIKSolution(grasp_transform, ik_options)
-
-  #     if pose is None:
-  #       continue
-
-  #     self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices());
-
-  #     collisions = utils.get_all_collisions(self.robot, self.env)
-  #     # make sure collisions don't include any bad bodies
-  #     bad_body_exists = False
-  #     for body in collisions:
-  #       if body in bad_bodies:
-  #         bad_body_exists = True
-  #         break;
-  #     if bad_body_exists:
-  #       continue
-
-  #     if col_free:
-  #       best_pose = pose
-  #       min_collisions = collisions
-  #       best_grasp = grasp
-  #       break
-
-  #     if len(collisions) < num_min_collisions:
-  #       num_min_collisions = len(collisions)
-  #       min_collisions = collisions
-  #       best_pose = pose
-  #       best_grasp = grasp
-
-  #   # restore removed obj_to_grasp and robot DOFs before returning
-  #   self.env.AddKinBody(obj_to_grasp)
-  #   self.robot.SetDOFValues(dof_orig)
-
-  #   return best_pose, best_grasp, [obj.GetName() for obj in min_collisions]
-
+      
   def _generate_grasps(self, obj, gmodel, use_general_grasps=True):
     """
     Returns a list with all the valid grasps for object obj.
