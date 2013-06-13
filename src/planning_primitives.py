@@ -593,12 +593,12 @@ class PlanParser(object):
             error.pddl_error_info = "LineNumber: %d\n%s" % (error.line_number, obst_list)
             
             # update obstruction directed graph
-            if not self.executor.obstruction_digraph.has_node(object_to_grasp_name):
-                self.executor.obstruction_digraph.add_node(object_to_grasp_name)
-            for obstr in collision_list:
-                if not self.executor.obstruction_digraph.has_node(obstr):
-                    self.executor.obstruction_digraph.add_node(obstr)
-                self.executor.obstruction_digraph.add_edge((obstr, object_to_grasp_name))
+            # if not self.executor.obstruction_digraph.has_node(object_to_grasp_name):
+            #     self.executor.obstruction_digraph.add_node(object_to_grasp_name)
+            # for obstr in collision_list:
+            #     if not self.executor.obstruction_digraph.has_node(obstr):
+            #         self.executor.obstruction_digraph.add_node(obstr)
+            #     self.executor.obstruction_digraph.add_edge((obstr, object_to_grasp_name))
             return
         
         elif "heavy" in error.problem:
