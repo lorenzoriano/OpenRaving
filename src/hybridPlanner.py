@@ -221,6 +221,7 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
     iteration = 0
     initialProblemFile = pddlProblemFile
     cacheClearCount = 0
+    prevPDDLFile = None
     while True:
         reinterpreted = False
         iteration += 1
@@ -244,7 +245,10 @@ def iterativePlanAuto(myPatcher, ex, pddlDomainFile, pddlProblemFile, viewer, en
             print "Total planning time: {0}".format(totalExecTime)
             print "Replan count: "+ repr(iteration)
             print "Cache clearing count: "+ repr(cacheClearCount)
-            obsCount = tryIO(prevPDDLFile, "read").count("obstructs")
+            if prevPDDLFile is not None:
+                obsCount = tryIO(prevPDDLFile, "read").count("obstructs")
+            else:
+                obsCount = 0
             print "Number of obstructions handled: "+ repr(obsCount)
             sys.exit(0)
         except planning_primitives.ExecutingException, e:
