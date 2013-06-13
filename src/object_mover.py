@@ -1,6 +1,7 @@
 import numpy as np
 import openravepy
 import utils
+from PlannerPR2 import PlannerPR2
 
 
 class ObjectMover(object):
@@ -9,6 +10,7 @@ class ObjectMover(object):
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
     self.grasping_pose_cache = {}
+    self.pr2 = PlannerPR2(self.robot)
 
   def pickup(self, obj):
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
@@ -19,6 +21,10 @@ class ObjectMover(object):
     self.robot.GetController().SetPath(traj)
     self.robot.WaitForController(0)
     self.robot.GetController().Reset()
+    self.pr2.rarm.execute_openrave_trajectory(traj)
+    # self.pr2.join_all() # Doesn't work in sim for some reason..
+    raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
+
     print("Trajectory execution complete!")
 
     print("Grasping object...")

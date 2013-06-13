@@ -150,6 +150,9 @@ class Executor(object):
         print "ignore me !"    
     
     def grasp(self, obj_name, _unused1, _unused2):
+        if use_ros:
+            self.pr2robot.update_rave()
+
         obj = self.env.GetKinBody(obj_name)
         try:
             self.object_mover.pickup(obj)
@@ -162,8 +165,6 @@ class Executor(object):
         return
     
     def putdown(self, obj_name, table_name, _unused1):
-        #return
-
         print "Putting down object %s on %s" %(obj_name, table_name)
         obj = self.env.GetKinBody(obj_name)
         if obj is None:
