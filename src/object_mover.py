@@ -1,6 +1,8 @@
 import numpy as np
 import openravepy
 import utils
+import json
+import trajoptpy
 from PlannerPR2 import PlannerPR2
 
 
@@ -65,16 +67,64 @@ class ObjectMover(object):
                Clearing cache for this object")
         del self.grasping_pose_cache[obj_name]
 
-    for pose, grasp, _ in self._get_grasping_poses(obj_to_grasp, gmodel):
+    for joint_targets, grasp, _ in self._get_grasping_poses(obj_to_grasp, gmodel):
       gmodel.setPreshape(grasp)
-      basemanip = openravepy.interfaces.BaseManipulation(self.robot)
+      # basemanip = openravepy.interfaces.BaseManipulation(self.robot)
       print("Calculating trajectory...")
       try:
-        traj = basemanip.MoveManipulator(goal=pose, execute=False,
-                                         outputtrajobj=True)
+        # traj = basemanip.MoveManipulator(goal=joint_targets, execute=False,
+        #                                  outputtrajobj=True)
+
+        # Testing trajopt
+        # trajoptpy.SetInteractive(True)
+        request = {
+          "basic_info" : {
+            "n_steps" : 10,
+            "manip" : "rightarm", # see below for valid values
+            "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
+          },
+          "costs" : [
+          {
+            "type" : "joint_vel", # joint-space velocity cost
+            "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
+            # Also valid: "coeffs" : [7,6,5,4,3,2,1]
+          },
+          {
+            "type" : "collision",
+            "name" :"collision", # Shorten name so printed table will be prettier
+            "params" : {
+              "continuous": True, 
+              "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+              "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+            }
+          }
+          ],
+          "constraints" : [
+          {
+            "type" : "joint", # joint-space target
+            "params" : {"vals" : list(joint_targets) } # length of vals = # dofs of manip
+          }
+          ],
+          "init_info" : {
+              "type" : "straight_line", # straight line in joint space.
+              "endpoint" : list(joint_targets)
+          }
+        }
+        s = json.dumps(request)
+        prob = trajoptpy.ConstructProblem(s, self.env)
+        result = trajoptpy.OptimizeProblem(prob) # do optimization
+        traj = result.GetTraj()
+        print traj
+        # for values in traj:
+        #   self.robot.SetDOFValues(values, self.robot.GetManipulator('rightarm').GetArmIndices())
+        #   raw_input("next")
+
+        traj_obj = utils.array_to_traj(self.robot, traj)
+
         print("Got a trajectory!")
-        return traj
-      except:
+        return traj_obj
+      except Exception as e:
+        print e
         print("No collision-free trajetory for this pose. Trying again...")
       
     # No collision free trajectory found.

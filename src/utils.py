@@ -457,3 +457,21 @@ def find_nearest_box(obj, box_msgs):
             index = i
 
     return best_box_msg, index
+
+def array_to_traj(robot, a, dt=1):
+    """
+    Borrowed from:
+    https://github.com/joschu/planning_benchmark/blob/master/benchmark_scripts/run_problemset.py
+    """
+    spec = openravepy.ConfigurationSpecification()
+    name = "joint_values %s %s" % (robot.GetName(), ' '.join(map(str, robot.GetActiveDOFIndices())))
+    spec.AddGroup(name, robot.GetActiveDOF(), interpolation="linear")
+    spec.AddDeltaTimeGroup()
+    traj = openravepy.RaveCreateTrajectory(robot.GetEnv(), '')
+    traj.Init(spec)
+    for i, joints in enumerate(a):
+      pt = np.zeros(spec.GetDOF())
+      spec.InsertJointValues(pt, joints, robot, robot.GetActiveDOFIndices(), 0)
+      spec.InsertDeltaTime(pt, 0 if i == 0 else dt)
+      traj.Insert(i, pt)
+    return traj
