@@ -78,15 +78,12 @@ class ObjectMover(object):
         print("No collision-free trajetory for this pose. Trying again...")
       
     # No collision free trajectory found.
-    grasping_poses = self._get_grasping_poses(obj_to_grasp, gmodel,
-                                              col_free=False)
-    if not grasping_poses:
+    pose, grasp, collisions = self._get_min_col_grasping_pose(obj_to_grasp, gmodel)
+    if pose is None:
       e = ObjectMoveError("Object %s out of reach!" % obj_name)
       raise e
     else:
-      pose, grasp, collisions = grasping_poses.next() # TODO: temporarily gets first
       self.grasping_pose_cache[obj_name] = (pose, grasp)
-
       e = ObjectMoveError("No collision free trajectory found!")
       e.collision_list = [obj.GetName() for obj in collisions]
       raise e
@@ -121,6 +118,20 @@ class ObjectMover(object):
 
   #   return pose, grasp, collisions
 
+  def _get_min_col_grasping_pose(self, obj_to_grasp, gmodel):
+    min_col = float('inf')
+    best_pose = None
+    best_grasp = None
+    best_collisions = []
+    for pose, grasp, collisions in self._get_grasping_poses(obj_to_grasp,
+                                                            gmodel,
+                                                            col_free=False):
+      if len(collisions) < min_col:
+        best_pose = pose
+        best_grasp = grasp
+        best_collisions = collisions
+    return best_pose, best_grasp, best_collisions
+
   def _get_grasping_poses(self, obj_to_grasp, gmodel, col_free=True):
     # generating grasps
     grasps = self._generate_grasps(obj_to_grasp, gmodel)
@@ -142,7 +153,6 @@ class ObjectMover(object):
       gripper_joint_index = self.robot.GetJoint('r_gripper_l_finger_joint').GetDOFIndex()
       dof_copy[gripper_joint_index] = 0.54
       self.robot.SetDOFValues(dof_copy)
-
       # remove obj_to_grasp from environment when checking for collisions
       self.env.Remove(obj_to_grasp)
 
@@ -156,20 +166,19 @@ class ObjectMover(object):
 
       collisions = utils.get_all_collisions(self.robot, self.env)
 
+      # restore removed obj_to_grasp and robot DOFs after collision check
+      self.env.AddKinBody(obj_to_grasp)
+      self.robot.SetDOFValues(dof_orig)
+
       # make sure collisions don't contain any unmovable objects
       has_unmovable_obj = False
       for body in collisions:
-        print body.GetName(), self.unmovable_objects
         if body.GetName() in self.unmovable_objects:
           has_unmovable_obj = True
-          print ('break!')
           break
       if has_unmovable_obj:
         continue
 
-      # restore removed obj_to_grasp and robot DOFs before yielding
-      self.env.AddKinBody(obj_to_grasp)
-      self.robot.SetDOFValues(dof_orig)
       yield pose, grasp, collisions
 
   # def _get_min_col_grasping_pose(self, obj_to_grasp, gmodel, col_free=True,
