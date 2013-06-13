@@ -125,7 +125,8 @@ class ObjectMover(object):
     grasps = self._generate_grasps(obj_to_grasp, gmodel)
     openravepy.raveLogInfo("I've got %d grasps" % len(grasps))
     if len(grasps) == 0:
-      yield None, None, []
+      e = ObjectMoveError("No good grasp for %s!" % obj_name)
+      raise e
 
     # finding collision free grasping pose
     if col_free:
