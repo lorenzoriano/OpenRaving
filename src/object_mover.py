@@ -5,12 +5,13 @@ from PlannerPR2 import PlannerPR2
 
 
 class ObjectMover(object):
-  def __init__(self, env, use_ros):
+  def __init__(self, env, use_ros, unmovable_objects=set()):
     self.env = env
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
     self.grasping_pose_cache = {}
     self.use_ros = use_ros
+    self.unmovable_objects = unmovable_objects
     if self.use_ros:
       self.pr2 = PlannerPR2(self.robot)
 
@@ -154,14 +155,17 @@ class ObjectMover(object):
       self.robot.SetDOFValues(pose, self.robot.GetActiveManipulator().GetArmIndices());
 
       collisions = utils.get_all_collisions(self.robot, self.env)
-      # make sure collisions don't include any bad bodies
-      # bad_body_exists = False
-      # for body in collisions:
-      #   if body in bad_bodies:
-      #     bad_body_exists = True
-      #     break;
-      # if bad_body_exists:
-      #   continue
+
+      # make sure collisions don't contain any unmovable objects
+      has_unmovable_obj = False
+      for body in collisions:
+        print body.GetName(), self.unmovable_objects
+        if body.GetName() in self.unmovable_objects:
+          has_unmovable_obj = True
+          print ('break!')
+          break
+      if has_unmovable_obj:
+        continue
 
       # restore removed obj_to_grasp and robot DOFs before yielding
       self.env.AddKinBody(obj_to_grasp)

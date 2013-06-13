@@ -58,7 +58,7 @@ class Executor(object):
         self.objSequenceInPlan = []
         self.handled_objs = set()
 
-        self.object_mover = ObjectMover(self.env, use_ros)
+        self.object_mover = ObjectMover(self.env, use_ros, self.unMovableObjects)
 
         self.obstruction_digraph = digraph()
         
