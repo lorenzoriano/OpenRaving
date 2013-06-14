@@ -166,6 +166,7 @@ class Executor(object):
     
     def putdown(self, obj_name, table_name, _unused1):
         print "Putting down object %s on %s" %(obj_name, table_name)
+        return
         obj = self.env.GetKinBody(obj_name)
         if obj is None:
             raise ValueError("Object %s does not exist" % obj_name)

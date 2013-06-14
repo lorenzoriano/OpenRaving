@@ -72,8 +72,8 @@ class ObjectMover(object):
 
     if traj is not None:
       print "Trajectory found with collisions: {}".format(collisions)
-      # TODO: cache and raise
-      self.traj_cache[obj_name] = traj
+      # TODO: cache
+      # self.traj_cache[obj_name] = traj
       e = ObjectMoveError()
       e.collision_list = [obj.GetName() for obj in collisions]
       raise e
