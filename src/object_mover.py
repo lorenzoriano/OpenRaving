@@ -10,7 +10,7 @@ class ObjectMover(object):
     self.env = env
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
-    self.grasping_pose_cache = {}
+    self.traj_cache = {}
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
     self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env)
@@ -51,6 +51,10 @@ class ObjectMover(object):
     """
     obj_name = obj_to_grasp.GetName()
 
+    traj = self.traj_cache.get(obj_name, None)
+    if traj is not None:
+      return traj
+
     grasps = self._generate_grasps(obj_to_grasp, gmodel)
 
     print "Trying to find a collision-free trajectory..."
@@ -69,8 +73,10 @@ class ObjectMover(object):
     if traj is not None:
       print "Trajectory found with collisions: {}".format(collisions)
       # TODO: cache and raise
-      return traj
-      raise
+      self.traj_cache[obj_name] = traj
+      e = ObjectMoveError()
+      e.collision_list = [obj.GetName() for obj in collisions]
+      raise e
 
     print "Object cannot be moved!"
     raise
