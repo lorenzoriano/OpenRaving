@@ -161,7 +161,7 @@ class Executor(object):
             e.robot = self.robot
             e.object_to_grasp = obj
             e.collision_list = error.collision_list
-        return
+            raise e
     
     def putdown(self, obj_name, table_name, _unused1):
         print "Putting down object %s on %s" %(obj_name, table_name)

@@ -35,13 +35,15 @@ class ObjectMover(object):
     pose = openravepy.poseFromMatrix(mat).tolist()
     pos = pose[4:7]
     rot = pose[:4]
-    traj, _ = self.trajectory_generator.generate_traj(pos, rot, n_steps=2)
+    traj, _ = self.trajectory_generator.generate_traj(pos, rot, n_steps=2,
+                                                      collisionfree=False)
     self._execute_traj(traj)
 
   def drop(self, obj, table):
     pos1 = [0.4, -0.7, 1.5]
     rot = [0.707, 0, 0, -0.707]
-    traj1, _ = self.trajectory_generator.generate_traj(pos1, rot)
+    traj1, _ = self.trajectory_generator.generate_traj(pos1, rot,
+                                                      collisionfree=False)
 
     # saving values
     orig_values = self.robot.GetDOFValues(
@@ -49,7 +51,8 @@ class ObjectMover(object):
     self.robot.SetDOFValues(traj1[-1],
       self.robot.GetManipulator('rightarm').GetArmIndices())
     pos2 = [0.1, -0.7, 0.9]
-    traj2, _ = self.trajectory_generator.generate_traj(pos2, rot)
+    traj2, _ = self.trajectory_generator.generate_traj(pos2, rot,
+                                                      collisionfree=False)
     # reset
     self.robot.SetDOFValues(orig_values,
       self.robot.GetManipulator('rightarm').GetArmIndices())
