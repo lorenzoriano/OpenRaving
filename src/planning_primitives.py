@@ -26,9 +26,6 @@ try:
     from pr2_control_utilities.pr2_planning import PR2MoveArm
     from pr2_control_utilities.pr2_joint_mover import PR2JointMover
 
-    import grasp_generator
-    import object_pickup
-
     detector_and_cluster_map = None
 except:
     print "Warning: ROS imports failed. Okay if not using ROS."

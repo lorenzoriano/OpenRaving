@@ -3,6 +3,7 @@ import openravepy
 import utils
 from PlannerPR2 import PlannerPR2
 from trajectory_generator import TrajectoryGenerator, GraspTrajectoryGenerator
+from grasp_generator import GraspGenerator
 
 
 class ObjectMover(object):
@@ -13,6 +14,7 @@ class ObjectMover(object):
     self.traj_cache = {}
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
+    self.grasp_generator = GraspGenerator(self.env)
     self.trajectory_generator = TrajectoryGenerator(self.env)
     self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env,
       unmovable_objects)
@@ -25,8 +27,6 @@ class ObjectMover(object):
     self.traj_cache = {}
 
   def pickup(self, obj):
-    gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
-
     if self.use_ros:
       self.joint_mover.open_right_gripper(True)
 
@@ -36,7 +36,7 @@ class ObjectMover(object):
     self._execute_traj(traj)
 
     # trajectory to grasp
-    traj = self._get_grasping_trajectory(obj, gmodel)
+    traj = self._get_grasping_trajectory(obj)
     self._execute_traj(traj)
 
     # close gripper
@@ -102,14 +102,13 @@ class ObjectMover(object):
       self.robot.GetController().Reset()
     print("Trajectory execution complete!")
 
-  def _get_grasping_trajectory(self, obj_to_grasp, gmodel):
+  def _get_grasping_trajectory(self, obj_to_grasp):
     """
     Finds a valid grasping trajectory or raises an ObjectMoveError
     if a valid trajectory cannot be found
 
     Parameters:
     obj_to_grasp: Object for which to compute a grasping trajectory
-    gmodel: An OpenRave GraspingModel object
     
     Returns:
     An OpenRave trajectory object
@@ -122,11 +121,11 @@ class ObjectMover(object):
       return traj
 
 
-    grasps = self._generate_grasps(obj_to_grasp, gmodel)
+    grasp_pose_list = self.grasp_generator.generate_poses(obj_to_grasp)
 
     print "Trying to find a collision-free trajectory..."
     traj, _ = self.grasp_trajectory_generator.generate_grasping_traj(
-      obj_to_grasp, grasps, gmodel)
+      obj_to_grasp, grasp_pose_list)
 
     if traj is not None:
       print "Found a collision-free trajectory!!"
@@ -135,7 +134,7 @@ class ObjectMover(object):
 
     print "Trying to find any trajectory..."
     traj, collisions = self.grasp_trajectory_generator.generate_grasping_traj(
-      obj_to_grasp, grasps, gmodel, collisionfree=False)
+      obj_to_grasp, grasp_pose_list, collisionfree=False)
 
     if traj is not None:
       print "Trajectory found with collisions: {}".format(collisions)
@@ -146,43 +145,7 @@ class ObjectMover(object):
 
     print "Object cannot be moved!"
     raise
-      
-  def _generate_grasps(self, obj, gmodel, use_general_grasps=True):
-    """
-    Returns a list with all the valid grasps for object obj.
 
-    Parameters:
-    obj: blah
-    
-    Returns:
-    List of Transformation matrices, one for each valid grasping pose.
-    """    
-    
-    class _GraspOptions(object):
-      def __init__(self):
-        #self.delta = 0.0
-        self.normalanglerange = 0.0
-        self.standoffs = [0]
-        self.rolls = np.arange(0.49*np.pi, 0.51*np.pi, 0.25*np.pi)
-        self.directiondelta = 0.1
-        pass
-
-    if use_general_grasps:
-      gmodel.grasps = utils.side_cylinder_pre_grasps
-    else:
-      if not gmodel.load():
-        openravepy.raveLogInfo("Generating grasping model...")
-        gmodel.autogenerate(_GraspOptions())
-
-    openravepy.raveLogInfo("Generating grasps")
-    validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
-                                               checkik=False,
-                                               checkgrasper=False)
-    np.random.shuffle(validgrasps)
-    
-    openravepy.raveLogInfo("Number of valid grasps: %d" % len(validgrasps))
-    return validgrasps
-    # return [gmodel.getGlobalGraspTransform(grasp) for grasp in validgrasps]
 
 class ObjectMoveError(Exception):
   pass
