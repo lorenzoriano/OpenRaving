@@ -10,7 +10,7 @@ class ObjectMover(object):
     self.env = env
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
-    self.grasp_cache = {}
+    self.traj_cache = {}
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
     self.trajectory_generator = TrajectoryGenerator(self.env)
@@ -22,13 +22,18 @@ class ObjectMover(object):
       self.joint_mover = PR2JointMover()
 
   def clear_cache(self):
-    self.grasp_cache = {}
+    self.traj_cache = {}
 
   def pickup(self, obj):
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
 
     if self.use_ros:
       self.joint_mover.open_right_gripper(True)
+
+    # always start at same place
+    joints = [-1.2, 0.9, 0.3, -1.8, -3.0, -0.3, 3.0]
+    traj = self.trajectory_generator.generate_traj_with_joints(joints)
+    self._execute_traj(traj)
 
     # trajectory to grasp
     traj = self._get_grasping_trajectory(obj, gmodel)
@@ -111,18 +116,16 @@ class ObjectMover(object):
     """
     obj_name = obj_to_grasp.GetName()
 
-    grasp = self.grasp_cache.get(obj_name, None)
-    if grasp is not None:
-      print "Using existing grasp in cache!"
-      traj, _, _ = self.grasp_trajectory_generator.generate_grasping_traj(
-        obj_to_grasp, [grasp], gmodel)
+    traj = self.traj_cache.get(obj_name, None)
+    if traj is not None:
+      print "Using existing traj in cache!"
       return traj
 
 
     grasps = self._generate_grasps(obj_to_grasp, gmodel)
 
     print "Trying to find a collision-free trajectory..."
-    traj, _, _ = self.grasp_trajectory_generator.generate_grasping_traj(
+    traj, _ = self.grasp_trajectory_generator.generate_grasping_traj(
       obj_to_grasp, grasps, gmodel)
 
     if traj is not None:
@@ -131,13 +134,12 @@ class ObjectMover(object):
     print "No collision-free trajectory found!"
 
     print "Trying to find any trajectory..."
-    traj, collisions, grasp = self.grasp_trajectory_generator.generate_grasping_traj(
+    traj, collisions = self.grasp_trajectory_generator.generate_grasping_traj(
       obj_to_grasp, grasps, gmodel, collisionfree=False)
 
     if traj is not None:
       print "Trajectory found with collisions: {}".format(collisions)
-      # TODO: cache
-      self.grasp_cache[obj_name] = grasp
+      self.traj_cache[obj_name] = traj
       e = ObjectMoveError()
       e.collision_list = [obj.GetName() for obj in collisions]
       raise e

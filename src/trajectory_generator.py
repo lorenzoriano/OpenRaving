@@ -35,6 +35,61 @@ class TrajectoryGenerator(object):
       "costs" : [
       {
         "type" : "joint_vel", # joint-space velocity cost
+        "params": {"coeffs" : [50]} # a list of length one is automatically expanded to a list of length n_dofs
+        # Also valid: "coeffs" : [7,6,5,4,3,2,1]
+      },
+      {
+        "type" : "collision",
+        "name" : "col", # Shorten name so printed table will be prettier
+        "params" : {
+          "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+          "dist_pen" : [0] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+        }
+      },
+      {
+        "type" : "continuous_collision",
+        "name" : "cont_col", # Shorten name so printed table will be prettier
+        "params" : {
+          "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+          "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+        }
+      }],
+      "constraints" : [
+      {
+        "type" : "pose",
+        "params" : {"xyz" : pos,
+                    "wxyz" : rot,
+                    "link": "r_gripper_tool_frame",
+                    "pos_coeffs" : [20, 20, 20],
+                    "rot_coeffs" : [20, 20, 20]}
+      }],
+      "init_info" : {
+          "type" : "straight_line", # straight line in joint space.
+          "endpoint" : init_joints.tolist()
+      }
+    }
+
+    prob = trajoptpy.ConstructProblem(json.dumps(request), self.env)
+
+    result = trajoptpy.OptimizeProblem(prob)
+    traj = result.GetTraj()
+
+    collisions = self.collision_checker.get_collisions(traj)
+    if collisionfree and collisions:
+      return None, collisions
+
+    return traj, collisions
+
+  def generate_traj_with_joints(self, joint_target, n_steps=None):
+    request = {
+      "basic_info" : {
+        "n_steps" : self.n_steps if (n_steps is None) else n_steps,
+        "manip" : "rightarm", # see below for valid values
+        "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
+      },
+      "costs" : [
+      {
+        "type" : "joint_vel", # joint-space velocity cost
         "params": {"coeffs" : [10]} # a list of length one is automatically expanded to a list of length n_dofs
         # Also valid: "coeffs" : [7,6,5,4,3,2,1]
       },
@@ -56,27 +111,20 @@ class TrajectoryGenerator(object):
       }],
       "constraints" : [
       {
-        "type" : "pose",
-        "params" : {"xyz" : pos,
-                    "wxyz" : rot,
-                    "link": "r_gripper_tool_frame"}
-      }],
+        "type" : "joint", # joint-space target
+        "params" : {"vals" : joint_target } # length of vals = # dofs of manip
+      }
+      ],
       "init_info" : {
           "type" : "straight_line", # straight line in joint space.
-          "endpoint" : init_joints.tolist()
+          "endpoint" : joint_target
       }
     }
 
     prob = trajoptpy.ConstructProblem(json.dumps(request), self.env)
-
     result = trajoptpy.OptimizeProblem(prob)
     traj = result.GetTraj()
-
-    collisions = self.collision_checker.get_collisions(traj)
-    if collisionfree and collisions:
-      return None, collisions
-
-    return traj, collisions
+    return traj
 
 class GraspTrajectoryGenerator(object):
   def __init__(self, env, unmovable_objects=set(), approachdist=0.1):
@@ -150,9 +198,6 @@ class GraspTrajectoryGenerator(object):
         xyz_target2, quat_target2, init_joints2, collisionfree)
       self.env.AddKinBody(obj)
 
-      if obj in collisions2:
-        collisions2.remove(obj)
-
       # reset 
       self.robot.SetDOFValues(orig_values,
         self.robot.GetManipulator('rightarm').GetArmIndices())
@@ -161,9 +206,11 @@ class GraspTrajectoryGenerator(object):
         continue
 
       collisions = collisions1.union(collisions2)
+      if obj in collisions:
+        collisions.remove(obj)
       if self.unmovable_objects.intersection(collisions):
         continue
 
-      return traj1.tolist() + traj2.tolist(), collisions, grasp
+      return traj1.tolist() + traj2.tolist(), collisions
 
-    return None, set(), None
+    return None, set()
