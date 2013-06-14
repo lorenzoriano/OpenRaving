@@ -138,6 +138,10 @@ class GraspTrajectoryGenerator(object):
           openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
 
       if init_joints2 is None:
+        # reset 
+        self.robot.SetDOFValues(orig_values,
+          self.robot.GetManipulator('rightarm').GetArmIndices())
+        self.env.AddKinBody(obj)
         continue
 
       gripper_pose2 = openravepy.poseFromMatrix(Tgrasp2).tolist()
