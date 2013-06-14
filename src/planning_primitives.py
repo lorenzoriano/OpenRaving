@@ -54,7 +54,7 @@ class Executor(object):
         self.grasping_locations_cache = {}
         self.viewMode = viewer
         self.tray_stack = []
-        self.unMovableObjects = ['table']
+        self.unMovableObjects = {self.env.GetKinBody('table')}
         self.objSequenceInPlan = []
         self.handled_objs = set()
 

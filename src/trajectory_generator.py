@@ -79,10 +79,11 @@ class TrajectoryGenerator(object):
     return traj, collisions
 
 class GraspTrajectoryGenerator(object):
-  def __init__(self, env, approachdist=0.1):
+  def __init__(self, env, unmovable_objects=set(), approachdist=0.1):
     self.env = env
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
+    self.unmovable_objects = unmovable_objects
     self.approachdist = approachdist
     self.pregrasp_trajectory_generator = TrajectoryGenerator(self.env)
     self.grasp_trajectory_generator = TrajectoryGenerator(self.env, 2)
@@ -156,6 +157,10 @@ class GraspTrajectoryGenerator(object):
       if traj2 is None:
         continue
 
-      return traj1.tolist() + traj2.tolist(), collisions1.union(collisions2)
+      collisions = collisions1.union(collisions2)
+      if self.unmovable_objects.intersection(collisions):
+        continue
+
+      return traj1.tolist() + traj2.tolist(), collisions
 
     return None, set()

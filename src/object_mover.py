@@ -14,7 +14,8 @@ class ObjectMover(object):
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
     self.trajectory_generator = TrajectoryGenerator(self.env)
-    self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env)
+    self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env,
+      unmovable_objects)
     if self.use_ros:
       from pr2_control_utilities.pr2_joint_mover import PR2JointMover
       self.pr2 = PlannerPR2(self.robot)
