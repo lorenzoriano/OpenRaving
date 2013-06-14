@@ -7,27 +7,42 @@ from collision_checker import CollisionChecker
 class TrajectoryGenerator(object):
   def __init__(self, env, n_steps=10):
     self.env = env
+    self.robot = self.env.GetRobots()[0]
+    self.manip = self.robot.GetActiveManipulator()
     self.n_steps = n_steps
     self.collision_checker = CollisionChecker(self.env)
 
-  def generate_traj(self, pos, rot, init_joints, collisionfree=True):
+  def generate_traj(self, pos, rot,
+                    init_joints=None,
+                    collisionfree=True,
+                    n_steps=None):
+    if init_joints is None:
+      mat = openravepy.matrixFromPose(rot + pos)
+
+      if collisionfree:
+        init_joints = self.manip.FindIKSolution(mat,
+          openravepy.IkFilterOptions.CheckEnvCollisions)
+      else:
+        init_joints = self.manip.FindIKSolution(mat,
+          openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
+
     request = {
       "basic_info" : {
-        "n_steps" : self.n_steps,
+        "n_steps" : self.n_steps if (n_steps is None) else n_steps,
         "manip" : "rightarm", # see below for valid values
         "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
       },
       "costs" : [
       {
         "type" : "joint_vel", # joint-space velocity cost
-        "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
+        "params": {"coeffs" : [10]} # a list of length one is automatically expanded to a list of length n_dofs
         # Also valid: "coeffs" : [7,6,5,4,3,2,1]
       },
       {
         "type" : "collision",
         "name" : "col", # Shorten name so printed table will be prettier
         "params" : {
-          "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+          "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
           "dist_pen" : [0.0] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
         }
       },
@@ -35,7 +50,7 @@ class TrajectoryGenerator(object):
         "type" : "continuous_collision",
         "name" : "cont_col", # Shorten name so printed table will be prettier
         "params" : {
-          "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+          "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
           "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
         }
       }],
@@ -59,7 +74,7 @@ class TrajectoryGenerator(object):
 
     collisions = self.collision_checker.get_collisions(traj)
     if collisionfree and collisions:
-      return None, set()
+      return None, collisions
 
     return traj, collisions
 

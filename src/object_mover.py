@@ -2,7 +2,7 @@ import numpy as np
 import openravepy
 import utils
 from PlannerPR2 import PlannerPR2
-from trajectory_generator import GraspTrajectoryGenerator
+from trajectory_generator import TrajectoryGenerator, GraspTrajectoryGenerator
 
 
 class ObjectMover(object):
@@ -13,6 +13,7 @@ class ObjectMover(object):
     self.traj_cache = {}
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
+    self.trajectory_generator = TrajectoryGenerator(self.env)
     self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env)
     if self.use_ros:
       self.pr2 = PlannerPR2(self.robot)
@@ -20,8 +21,53 @@ class ObjectMover(object):
   def pickup(self, obj):
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
 
-    # begin pickup actions
+    # trajectory to grasp
     traj = self._get_grasping_trajectory(obj, gmodel)
+    self._execute_traj(traj)
+
+    # close gripper
+    self.robot.Grab(obj)
+
+    # lift object
+    link = self.robot.GetLink('r_gripper_tool_frame')
+    mat = link.GetTransform()
+    mat[2][3] += 0.3
+    pose = openravepy.poseFromMatrix(mat).tolist()
+    pos = pose[4:7]
+    rot = pose[:4]
+    traj, _ = self.trajectory_generator.generate_traj(pos, rot, n_steps=2)
+    self._execute_traj(traj)
+
+  def drop(self, obj, table):
+    pos1 = [0.4, -0.7, 1.5]
+    rot = [0.707, 0, 0, -0.707]
+    traj1, _ = self.trajectory_generator.generate_traj(pos1, rot)
+
+    # saving values
+    orig_values = self.robot.GetDOFValues(
+      self.robot.GetManipulator('rightarm').GetArmIndices())
+    self.robot.SetDOFValues(traj1[-1],
+      self.robot.GetManipulator('rightarm').GetArmIndices())
+    pos2 = [0.1, -0.7, 0.9]
+    traj2, _ = self.trajectory_generator.generate_traj(pos2, rot)
+    # reset
+    self.robot.SetDOFValues(orig_values,
+      self.robot.GetManipulator('rightarm').GetArmIndices())
+
+    self._execute_traj(traj1.tolist() + traj2.tolist())
+
+    self.robot.Release(obj)
+
+    # transforming the object
+    T = obj.GetTransform()
+    rot_angle = (np.pi / 2., 0., 0) #got this from the model
+    rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
+    T[:3, :3] = rot_mat
+    _, _, _, _, z = utils.get_object_limits(table)
+    T[2, 3] = z
+    obj.SetTransform(T)
+
+  def _execute_traj(self, traj):
     traj_obj = utils.array_to_traj(self.robot, traj)
     print("Executing trajectory...")
     self.robot.GetController().SetPath(traj_obj)
@@ -31,11 +77,7 @@ class ObjectMover(object):
       self.pr2.rarm.execute_openrave_trajectory(traj)
       # self.pr2.join_all() # Doesn't work in sim for some reason..
       raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
-
     print("Trajectory execution complete!")
-
-    print("Grasping object...")
-    self.robot.Grab(obj)
 
   def _get_grasping_trajectory(self, obj_to_grasp, gmodel):
     """

@@ -161,13 +161,15 @@ class Executor(object):
             e.robot = self.robot
             e.object_to_grasp = obj
             e.collision_list = error.collision_list
-            raise e
         return
     
     def putdown(self, obj_name, table_name, _unused1):
         print "Putting down object %s on %s" %(obj_name, table_name)
-        return
         obj = self.env.GetKinBody(obj_name)
+        table = self.env.GetKinBody(table_name)
+        self.object_mover.drop(obj, table)
+        return
+
         if obj is None:
             raise ValueError("Object %s does not exist" % obj_name)
         
