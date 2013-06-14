@@ -3,7 +3,7 @@ import numpy as np
 import utils
 
 
-class GraspGenerator(object):
+class GraspPoseGenerator(object):
   def __init__(self, env):
     self.env = env
     self.robot = self.env.GetRobots()[0]

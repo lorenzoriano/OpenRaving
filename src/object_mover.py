@@ -3,7 +3,7 @@ import openravepy
 import utils
 from openrave_tests.PlannerPR2 import PlannerPR2
 from trajectory_generator import TrajectoryGenerator, GraspTrajectoryGenerator
-from grasp_generator import GraspGenerator
+from grasp_pose_generator import GraspPoseGenerator
 
 
 class ObjectMover(object):
@@ -14,7 +14,7 @@ class ObjectMover(object):
     self.traj_cache = {}
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
-    self.grasp_generator = GraspGenerator(self.env)
+    self.grasp_pose_generator = GraspPoseGenerator(self.env)
     self.trajectory_generator = TrajectoryGenerator(self.env)
     self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env,
       unmovable_objects)
@@ -121,7 +121,7 @@ class ObjectMover(object):
       return traj
 
 
-    grasp_pose_list = self.grasp_generator.generate_poses(obj_to_grasp)
+    grasp_pose_list = self.grasp_pose_generator.generate_poses(obj_to_grasp)
 
     print "Trying to find a collision-free trajectory..."
     traj, _ = self.grasp_trajectory_generator.generate_grasping_traj(
