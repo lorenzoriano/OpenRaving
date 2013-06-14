@@ -56,7 +56,7 @@ class ObjectMover(object):
     grasps = self._generate_grasps(obj_to_grasp, gmodel)
 
     print "Trying to find a collision-free trajectory..."
-    traj, _ = self._grasping_trajectory_generator(grasps, gmodel)
+    traj, _ = self._grasping_trajectory_generator(obj_to_grasp, grasps, gmodel)
 
     if traj is not None:
       print "Found a collision-free trajectory!!"
@@ -64,7 +64,8 @@ class ObjectMover(object):
     print "No collision-free trajectory found!"
 
     print "Trying to find any trajectory..."
-    traj, collisions = self._grasping_trajectory_generator(grasps, gmodel,
+    traj, collisions = self._grasping_trajectory_generator(obj_to_grasp, grasps,
+                                                           gmodel,
                                                            collisionfree=False)
     if traj is not None:
       print "Trajectory found with collisions: {}".format(collisions)
@@ -74,39 +75,80 @@ class ObjectMover(object):
     print "Object cannot be moved!"
     raise
 
-  def _grasping_trajectory_generator(self, grasps, gmodel, approachdist=0.1,
+  def _grasping_trajectory_generator(self, obj_to_grasp, grasps, gmodel,
+                                     approachdist=0.1,
                                      collisionfree=True):
     for grasp in grasps:
       gmodel.setPreshape(grasp)
-      Tgrasp = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
+
+      # find trajectory to pregrasp
+      Tgrasp1 = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
+
+      approach = gmodel.getGlobalApproachDir(grasp) * approachdist
+      Tgrasp1[0][3] -= approach[0]
+      Tgrasp1[1][3] -= approach[1]
+      Tgrasp1[2][3] -= approach[2]
 
       if collisionfree:
-        init_joints = self.manip.FindIKSolution(Tgrasp,
+        init_joints1 = self.manip.FindIKSolution(Tgrasp1,
           openravepy.IkFilterOptions.CheckEnvCollisions)
       else:
-        init_joints = self.manip.FindIKSolution(Tgrasp,
+        init_joints1 = self.manip.FindIKSolution(Tgrasp1,
           openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
 
-      if init_joints is None:
+      if init_joints1 is None:
         continue
 
-      gripper_pose = openravepy.poseFromMatrix(Tgrasp).tolist()
-      xyz_target = gripper_pose[4:7]
-      approach = gmodel.getGlobalApproachDir(grasp) * approachdist
-      xyz_target[0] -= approach[0]
-      xyz_target[1] -= approach[1]
-      xyz_target[2] -= approach[2]
+      gripper_pose1 = openravepy.poseFromMatrix(Tgrasp1).tolist()
+      xyz_target1 = gripper_pose1[4:7]
       # quaternions are rotated by pi/2 around y for some reason...
-      quat_target = openravepy.quatMultiply(gripper_pose[:4],
+      quat_target1 = openravepy.quatMultiply(gripper_pose1[:4],
                                             (0.707, 0, -0.707, 0)).tolist()
 
-      traj, collisions = self._trajectory_generator(xyz_target, quat_target,
-                                                        init_joints,
-                                                        collisionfree)
-      if traj is None:
+      traj1, collisions1 = self._trajectory_generator(xyz_target1, quat_target1,
+                                                      init_joints1,
+                                                      collisionfree)
+      if traj1 is None:
         continue
-      return traj, collisions
-      
+
+      # find trajectory to grasp
+      orig_values = self.robot.GetDOFValues(
+        self.robot.GetManipulator('rightarm').GetArmIndices())
+
+      self.robot.SetDOFValues(traj1[-1],
+        self.robot.GetManipulator('rightarm').GetArmIndices())
+
+      Tgrasp2 = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
+
+      if collisionfree:
+        init_joints2 = self.manip.FindIKSolution(Tgrasp2,
+          openravepy.IkFilterOptions.CheckEnvCollisions)
+      else:
+        init_joints2 = self.manip.FindIKSolution(Tgrasp2,
+          openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
+
+      if init_joints2 is None:
+        continue
+
+      gripper_pose2 = openravepy.poseFromMatrix(Tgrasp2).tolist()
+      xyz_target2 = gripper_pose2[4:7]
+      # quaternions are rotated by pi/2 around y for some reason...
+      quat_target2 = openravepy.quatMultiply(gripper_pose2[:4],
+                                            (0.707, 0, -0.707, 0)).tolist()
+
+      traj2, collisions2 = self._trajectory_generator(xyz_target2, quat_target2,
+                                                      init_joints2,
+                                                      collisionfree)
+
+      # reset 
+      self.robot.SetDOFValues(orig_values,
+        self.robot.GetManipulator('rightarm').GetArmIndices())
+
+      if traj2 is None:
+        continue
+
+      return traj1.tolist() + traj2.tolist(), collisions1.union(collisions2)
+
     return None, set()
 
   def _trajectory_generator(self, pos, rot, init_joints,
@@ -126,9 +168,16 @@ class ObjectMover(object):
       },
       {
         "type" : "collision",
-        "name" :"collision", # Shorten name so printed table will be prettier
+        "name" : "col", # Shorten name so printed table will be prettier
         "params" : {
-          "continuous": True, 
+          "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+          "dist_pen" : [0.0] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+        }
+      },
+      {
+        "type" : "continuous_collision",
+        "name" : "cont_col", # Shorten name so printed table will be prettier
+        "params" : {
           "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
           "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
         }
