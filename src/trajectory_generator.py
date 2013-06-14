@@ -92,7 +92,7 @@ class GraspTrajectoryGenerator(object):
     for grasp in grasps:
       gmodel.setPreshape(grasp)
 
-      # find trajectory to pregrasp
+      # find IK for pregrasp
       Tgrasp1 = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
 
       approach = gmodel.getGlobalApproachDir(grasp) * self.approachdist
@@ -107,9 +107,21 @@ class GraspTrajectoryGenerator(object):
         init_joints1 = self.manip.FindIKSolution(Tgrasp1,
           openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
 
-      if init_joints1 is None:
+      # find IK for grasp
+      self.env.Remove(obj)
+      Tgrasp2 = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
+      if collisionfree:
+        init_joints2 = self.manip.FindIKSolution(Tgrasp2,
+          openravepy.IkFilterOptions.CheckEnvCollisions)
+      else:
+        init_joints2 = self.manip.FindIKSolution(Tgrasp2,
+          openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
+      self.env.AddKinBody(obj)
+
+      if (init_joints1 is None) or (init_joints2 is None):
         continue
 
+      # find traj for pregrasp
       gripper_pose1 = openravepy.poseFromMatrix(Tgrasp1).tolist()
       xyz_target1 = gripper_pose1[4:7]
       # quaternions are rotated by pi/2 around y for some reason...
@@ -126,23 +138,6 @@ class GraspTrajectoryGenerator(object):
         self.robot.GetManipulator('rightarm').GetArmIndices())
       self.robot.SetDOFValues(traj1[-1],
         self.robot.GetManipulator('rightarm').GetArmIndices())
-      self.env.Remove(obj)
-
-      Tgrasp2 = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
-
-      if collisionfree:
-        init_joints2 = self.manip.FindIKSolution(Tgrasp2,
-          openravepy.IkFilterOptions.CheckEnvCollisions)
-      else:
-        init_joints2 = self.manip.FindIKSolution(Tgrasp2,
-          openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
-
-      if init_joints2 is None:
-        # reset 
-        self.robot.SetDOFValues(orig_values,
-          self.robot.GetManipulator('rightarm').GetArmIndices())
-        self.env.AddKinBody(obj)
-        continue
 
       gripper_pose2 = openravepy.poseFromMatrix(Tgrasp2).tolist()
       xyz_target2 = gripper_pose2[4:7]
@@ -150,13 +145,17 @@ class GraspTrajectoryGenerator(object):
       quat_target2 = openravepy.quatMultiply(gripper_pose2[:4],
                                             (0.7071, 0, -0.7071, 0)).tolist()
 
+      self.env.Remove(obj)
       traj2, collisions2 = self.grasp_trajectory_generator.generate_traj(
         xyz_target2, quat_target2, init_joints2, collisionfree)
+      self.env.AddKinBody(obj)
+
+      if obj in collisions2:
+        collisions2.remove(obj)
 
       # reset 
       self.robot.SetDOFValues(orig_values,
         self.robot.GetManipulator('rightarm').GetArmIndices())
-      self.env.AddKinBody(obj)
 
       if traj2 is None:
         continue
