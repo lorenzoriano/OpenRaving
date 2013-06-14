@@ -31,7 +31,7 @@ class ObjectMover(object):
       self.joint_mover.open_right_gripper(True)
 
     # always start at same place
-    joints = [-1.2, 0.9, 0.3, -1.8, -3.0, -0.3, 3.0]
+    joints = [-1.2, 0.2, -0.8, -1.8, -3.0, -0.3, 3.0]
     traj = self.trajectory_generator.generate_traj_with_joints(joints)
     self._execute_traj(traj)
 
