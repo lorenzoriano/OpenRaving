@@ -49,7 +49,7 @@ class ObjectMover(object):
 
   def drop(self, obj, table):
     pos1 = [0.4, -0.7, 1.5]
-    rot = [0.707, 0, 0, -0.707]
+    rot = [0.7071, 0, 0, -0.7071]
     traj1, _ = self.trajectory_generator.generate_traj(pos1, rot,
                                                       collisionfree=False)
 

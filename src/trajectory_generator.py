@@ -114,7 +114,7 @@ class GraspTrajectoryGenerator(object):
       xyz_target1 = gripper_pose1[4:7]
       # quaternions are rotated by pi/2 around y for some reason...
       quat_target1 = openravepy.quatMultiply(gripper_pose1[:4],
-                                            (0.707, 0, -0.707, 0)).tolist()
+                                            (0.7071, 0, -0.7071, 0)).tolist()
 
       traj1, collisions1 = self.pregrasp_trajectory_generator.generate_traj(
         xyz_target1, quat_target1, init_joints1, collisionfree)
@@ -144,7 +144,7 @@ class GraspTrajectoryGenerator(object):
       xyz_target2 = gripper_pose2[4:7]
       # quaternions are rotated by pi/2 around y for some reason...
       quat_target2 = openravepy.quatMultiply(gripper_pose2[:4],
-                                            (0.707, 0, -0.707, 0)).tolist()
+                                            (0.7071, 0, -0.7071, 0)).tolist()
 
       traj2, collisions2 = self.grasp_trajectory_generator.generate_traj(
         xyz_target2, quat_target2, init_joints2, collisionfree)
