@@ -161,6 +161,6 @@ class GraspTrajectoryGenerator(object):
       if self.unmovable_objects.intersection(collisions):
         continue
 
-      return traj1.tolist() + traj2.tolist(), collisions
+      return traj1.tolist() + traj2.tolist(), collisions, grasp
 
-    return None, set()
+    return None, set(), None

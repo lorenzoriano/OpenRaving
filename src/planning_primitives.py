@@ -121,6 +121,7 @@ class Executor(object):
     def clear_gp_cache(self):
         self.grasping_locations_cache = {}
         self.objSequenceInPlan = []
+        self.object_mover.clear_cache()
 
     def pause(self, msg = None):
         if self.viewMode:
