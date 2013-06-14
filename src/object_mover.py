@@ -16,10 +16,15 @@ class ObjectMover(object):
     self.trajectory_generator = TrajectoryGenerator(self.env)
     self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env)
     if self.use_ros:
+      from pr2_control_utilities.pr2_joint_mover import PR2JointMover
       self.pr2 = PlannerPR2(self.robot)
+      self.joint_mover = PR2JointMover()
 
   def pickup(self, obj):
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
+
+    if self.use_ros:
+      self.joint_mover.open_right_gripper(True)
 
     # trajectory to grasp
     traj = self._get_grasping_trajectory(obj, gmodel)
@@ -27,6 +32,8 @@ class ObjectMover(object):
 
     # close gripper
     self.robot.Grab(obj)
+    if self.use_ros:
+      self.joint_mover.open_right_gripper(False)
 
     # lift object
     link = self.robot.GetLink('r_gripper_tool_frame')
@@ -59,7 +66,10 @@ class ObjectMover(object):
 
     self._execute_traj(traj1.tolist() + traj2.tolist())
 
+    # open gripper
     self.robot.Release(obj)
+    if self.use_ros:
+      self.joint_mover.open_right_gripper(True)
 
     # transforming the object
     T = obj.GetTransform()
@@ -74,12 +84,13 @@ class ObjectMover(object):
     traj_obj = utils.array_to_traj(self.robot, traj)
     print("Executing trajectory...")
     self.robot.GetController().SetPath(traj_obj)
-    self.robot.WaitForController(0)
-    self.robot.GetController().Reset()
     if self.use_ros:
-      self.pr2.rarm.execute_openrave_trajectory(traj)
+      self.pr2.rarm.execute_openrave_trajectory(traj_obj)
       # self.pr2.join_all() # Doesn't work in sim for some reason..
       raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
+    else:
+      self.robot.WaitForController(0)
+      self.robot.GetController().Reset()
     print("Trajectory execution complete!")
 
   def _get_grasping_trajectory(self, obj_to_grasp, gmodel):
@@ -104,7 +115,7 @@ class ObjectMover(object):
 
     print "Trying to find a collision-free trajectory..."
     traj, _ = self.grasp_trajectory_generator.generate_grasping_traj(
-      grasps, gmodel)
+      obj_to_grasp, grasps, gmodel)
 
     if traj is not None:
       print "Found a collision-free trajectory!!"
@@ -113,7 +124,7 @@ class ObjectMover(object):
 
     print "Trying to find any trajectory..."
     traj, collisions = self.grasp_trajectory_generator.generate_grasping_traj(
-      grasps, gmodel, collisionfree=False)
+      obj_to_grasp, grasps, gmodel, collisionfree=False)
 
     if traj is not None:
       print "Trajectory found with collisions: {}".format(collisions)

@@ -43,7 +43,7 @@ class TrajectoryGenerator(object):
         "name" : "col", # Shorten name so printed table will be prettier
         "params" : {
           "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-          "dist_pen" : [0.0] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+          "dist_pen" : [0.00] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
         }
       },
       {
@@ -87,7 +87,7 @@ class GraspTrajectoryGenerator(object):
     self.pregrasp_trajectory_generator = TrajectoryGenerator(self.env)
     self.grasp_trajectory_generator = TrajectoryGenerator(self.env, 2)
 
-  def generate_grasping_traj(self, grasps, gmodel, collisionfree=True):
+  def generate_grasping_traj(self, obj, grasps, gmodel, collisionfree=True):
     for grasp in grasps:
       gmodel.setPreshape(grasp)
 
@@ -123,9 +123,9 @@ class GraspTrajectoryGenerator(object):
       # find trajectory to grasp
       orig_values = self.robot.GetDOFValues(
         self.robot.GetManipulator('rightarm').GetArmIndices())
-
       self.robot.SetDOFValues(traj1[-1],
         self.robot.GetManipulator('rightarm').GetArmIndices())
+      self.env.Remove(obj)
 
       Tgrasp2 = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
 
@@ -151,6 +151,7 @@ class GraspTrajectoryGenerator(object):
       # reset 
       self.robot.SetDOFValues(orig_values,
         self.robot.GetManipulator('rightarm').GetArmIndices())
+      self.env.AddKinBody(obj)
 
       if traj2 is None:
         continue
