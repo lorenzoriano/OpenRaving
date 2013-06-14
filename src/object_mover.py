@@ -77,6 +77,13 @@ class ObjectMover(object):
 
         # Testing trajopt
         # trajoptpy.SetInteractive(True)
+        Tgrasp = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
+        pose = openravepy.poseFromMatrix(Tgrasp).tolist()
+        xyz_target = pose[4:7]
+        # quaternions are rotated by pi/2 around y for some reason...
+        quat_target = openravepy.quatMultiply(pose[:4],
+                                              (0.707, 0, -0.707, 0)).tolist()
+
         request = {
           "basic_info" : {
             "n_steps" : 10,
@@ -101,23 +108,20 @@ class ObjectMover(object):
           ],
           "constraints" : [
           {
-            "type" : "joint", # joint-space target
-            "params" : {"vals" : list(joint_targets) } # length of vals = # dofs of manip
-          }
-          ],
+            "type" : "pose",
+            "params" : {"xyz" : xyz_target,
+                        "wxyz" : quat_target,
+                        "link": "r_gripper_tool_frame"}
+          }],
           "init_info" : {
               "type" : "straight_line", # straight line in joint space.
-              "endpoint" : list(joint_targets)
+              "endpoint" : joint_targets.tolist()
           }
         }
         s = json.dumps(request)
         prob = trajoptpy.ConstructProblem(s, self.env)
         result = trajoptpy.OptimizeProblem(prob) # do optimization
         traj = result.GetTraj()
-        print traj
-        # for values in traj:
-        #   self.robot.SetDOFValues(values, self.robot.GetManipulator('rightarm').GetArmIndices())
-        #   raw_input("next")
 
         traj_obj = utils.array_to_traj(self.robot, traj)
 
