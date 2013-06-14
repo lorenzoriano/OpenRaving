@@ -4,6 +4,7 @@ import utils
 import json
 import trajoptpy
 from PlannerPR2 import PlannerPR2
+from collision_checker import CollisionChecker
 
 
 class ObjectMover(object):
@@ -14,6 +15,7 @@ class ObjectMover(object):
     self.grasping_pose_cache = {}
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
+    self.collision_checker = CollisionChecker(self.env)
     if self.use_ros:
       self.pr2 = PlannerPR2(self.robot)
 
@@ -50,97 +52,103 @@ class ObjectMover(object):
     """
     obj_name = obj_to_grasp.GetName()
 
-    pose_and_grasp = self.grasping_pose_cache.get(obj_name, None)
-    if pose_and_grasp is not None:
-      print("Pose and grasp for %s in cache!" % obj_name)
-      pose, grasp = pose_and_grasp
+    grasps = self._generate_grasps(obj_to_grasp, gmodel)
+
+    print "Trying to find a collision-free trajectory..."
+    traj_obj, _ = self._trajectory_generator(grasps, gmodel)
+
+    if traj_obj:
+      print "Found a collision-free trajectory!!"
+      return traj_obj
+    print "No collision-free trajectory found!"
+
+    print "Trying to find any trajectory..."
+    traj_obj, collisions = self._trajectory_generator(grasps, gmodel,
+                                                      collisionfree=False)
+    if traj_obj:
+      print "Trajectory found with collisions: {}".format(collisions)
+      # TODO: cache and raise
+      raise
+
+    print "Object cannot be moved!"
+    raise
+
+  def _trajectory_generator(self, grasps, gmodel, collisionfree=True):
+    # trajoptpy.SetInteractive(True)
+    for grasp in grasps:
       gmodel.setPreshape(grasp)
-      basemanip = openravepy.interfaces.BaseManipulation(self.robot)
-      print("Calculating trajectory...")
-      try:
-        traj = basemanip.MoveManipulator(goal=pose, execute=False,
-                                         outputtrajobj=True)
-        print("Got a trajectory!")
-        return traj
-      except:
-        print("No collision-free trajetory for this pose.\
-               Clearing cache for this object")
-        del self.grasping_pose_cache[obj_name]
+      Tgrasp = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
 
-    for joint_targets, grasp, _ in self._get_grasping_poses(obj_to_grasp, gmodel):
-      gmodel.setPreshape(grasp)
-      # basemanip = openravepy.interfaces.BaseManipulation(self.robot)
-      print("Calculating trajectory...")
-      try:
-        # traj = basemanip.MoveManipulator(goal=joint_targets, execute=False,
-        #                                  outputtrajobj=True)
+      if collisionfree:
+        init_joints = self.manip.FindIKSolution(Tgrasp,
+          openravepy.IkFilterOptions.CheckEnvCollisions)
+      else:
+        init_joints = self.manip.FindIKSolution(Tgrasp,
+          openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
 
-        # Testing trajopt
-        # trajoptpy.SetInteractive(True)
-        Tgrasp = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
-        pose = openravepy.poseFromMatrix(Tgrasp).tolist()
-        xyz_target = pose[4:7]
-        # quaternions are rotated by pi/2 around y for some reason...
-        quat_target = openravepy.quatMultiply(pose[:4],
-                                              (0.707, 0, -0.707, 0)).tolist()
+      if init_joints is None:
+        continue
 
-        request = {
-          "basic_info" : {
-            "n_steps" : 10,
-            "manip" : "rightarm", # see below for valid values
-            "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
-          },
-          "costs" : [
-          {
-            "type" : "joint_vel", # joint-space velocity cost
-            "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
-            # Also valid: "coeffs" : [7,6,5,4,3,2,1]
-          },
-          {
-            "type" : "collision",
-            "name" :"collision", # Shorten name so printed table will be prettier
-            "params" : {
-              "continuous": True, 
-              "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-              "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-            }
-          }
-          ],
-          "constraints" : [
-          {
-            "type" : "pose",
-            "params" : {"xyz" : xyz_target,
-                        "wxyz" : quat_target,
-                        "link": "r_gripper_tool_frame"}
-          }],
-          "init_info" : {
-              "type" : "straight_line", # straight line in joint space.
-              "endpoint" : joint_targets.tolist()
+      gripper_pose = openravepy.poseFromMatrix(Tgrasp).tolist()
+      xyz_target = gripper_pose[4:7]
+      approach = gmodel.getGlobalApproachDir(grasp) * 0.1
+      xyz_target[0] -= approach[0]
+      xyz_target[1] -= approach[1]
+      xyz_target[2] -= approach[2]
+      # quaternions are rotated by pi/2 around y for some reason...
+      quat_target = openravepy.quatMultiply(gripper_pose[:4],
+                                            (0.707, 0, -0.707, 0)).tolist()
+
+      request = {
+        "basic_info" : {
+          "n_steps" : 10,
+          "manip" : "rightarm", # see below for valid values
+          "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
+        },
+        "costs" : [
+        {
+          "type" : "joint_vel", # joint-space velocity cost
+          "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
+          # Also valid: "coeffs" : [7,6,5,4,3,2,1]
+        },
+        {
+          "type" : "collision",
+          "name" :"collision", # Shorten name so printed table will be prettier
+          "params" : {
+            "continuous": True, 
+            "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+            "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
           }
         }
-        s = json.dumps(request)
-        prob = trajoptpy.ConstructProblem(s, self.env)
-        result = trajoptpy.OptimizeProblem(prob) # do optimization
-        traj = result.GetTraj()
+        ],
+        "constraints" : [
+        {
+          "type" : "pose",
+          "params" : {"xyz" : xyz_target,
+                      "wxyz" : quat_target,
+                      "link": "r_gripper_tool_frame"}
+        }],
+        "init_info" : {
+            "type" : "straight_line", # straight line in joint space.
+            "endpoint" : init_joints.tolist()
+        }
+      }
+      s = json.dumps(request)
+      prob = trajoptpy.ConstructProblem(s, self.env)
+      result = trajoptpy.OptimizeProblem(prob) # do optimization
+      traj = result.GetTraj()
+      traj_obj = utils.array_to_traj(self.robot, traj)
+      # print "Got a trajectory!"
 
-        traj_obj = utils.array_to_traj(self.robot, traj)
+      collisions = self.collision_checker.get_collisions(traj)
+      # print "Collisions: {}".format(collisions)
 
-        print("Got a trajectory!")
-        return traj_obj
-      except Exception as e:
-        print e
-        print("No collision-free trajetory for this pose. Trying again...")
-      
-    # No collision free trajectory found.
-    pose, grasp, collisions = self._get_min_col_grasping_pose(obj_to_grasp, gmodel)
-    if pose is None:
-      e = ObjectMoveError("Object %s out of reach!" % obj_name)
-      raise e
-    else:
-      self.grasping_pose_cache[obj_name] = (pose, grasp)
-      e = ObjectMoveError("No collision free trajectory found!")
-      e.collision_list = [obj.GetName() for obj in collisions]
-      raise e
+      if collisionfree and collisions:
+        continue
+
+      return traj_obj, collisions
+
+    return None, set()
 
   def _get_min_col_grasping_pose(self, obj_to_grasp, gmodel):
     min_col = float('inf')
@@ -221,11 +229,11 @@ class ObjectMover(object):
     
     class _GraspOptions(object):
       def __init__(self):
-        self.delta = 0.0
+        #self.delta = 0.0
         self.normalanglerange = 0.0
         self.standoffs = [0]
         self.rolls = np.arange(0.49*np.pi, 0.51*np.pi, 0.25*np.pi)
-        self.directiondelta = 0.0
+        self.directiondelta = 0.1
         pass
 
     if use_general_grasps:
@@ -237,8 +245,8 @@ class ObjectMover(object):
 
     openravepy.raveLogInfo("Generating grasps")
     validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
-                           checkik=True,
-                           checkgrasper=False)
+                                               checkik=False,
+                                               checkgrasper=False)
     np.random.shuffle(validgrasps)
     
     openravepy.raveLogInfo("Number of valid grasps: %d" % len(validgrasps))
