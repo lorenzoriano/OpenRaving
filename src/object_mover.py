@@ -1,7 +1,7 @@
 import numpy as np
 import openravepy
 import utils
-from PlannerPR2 import PlannerPR2
+from openrave_tests.PlannerPR2 import PlannerPR2
 from trajectory_generator import TrajectoryGenerator, GraspTrajectoryGenerator
 from grasp_generator import GraspGenerator
 
