@@ -24,8 +24,9 @@ class ObjectMover(object):
 
     # begin pickup actions
     traj = self._get_grasping_trajectory(obj, gmodel)
+    traj_obj = utils.array_to_traj(self.robot, traj)
     print("Executing trajectory...")
-    self.robot.GetController().SetPath(traj)
+    self.robot.GetController().SetPath(traj_obj)
     self.robot.WaitForController(0)
     self.robot.GetController().Reset()
     if self.use_ros:
@@ -55,17 +56,17 @@ class ObjectMover(object):
     grasps = self._generate_grasps(obj_to_grasp, gmodel)
 
     print "Trying to find a collision-free trajectory..."
-    traj_obj, _ = self._trajectory_generator(grasps, gmodel)
+    traj, _ = self._grasping_trajectory_generator(grasps, gmodel)
 
-    if traj_obj:
+    if traj is not None:
       print "Found a collision-free trajectory!!"
-      return traj_obj
+      return traj
     print "No collision-free trajectory found!"
 
     print "Trying to find any trajectory..."
-    traj_obj, collisions = self._trajectory_generator(grasps, gmodel,
-                                                      collisionfree=False)
-    if traj_obj:
+    traj, collisions = self._grasping_trajectory_generator(grasps, gmodel,
+                                                           collisionfree=False)
+    if traj is not None:
       print "Trajectory found with collisions: {}".format(collisions)
       # TODO: cache and raise
       raise
@@ -73,8 +74,8 @@ class ObjectMover(object):
     print "Object cannot be moved!"
     raise
 
-  def _trajectory_generator(self, grasps, gmodel, collisionfree=True):
-    # trajoptpy.SetInteractive(True)
+  def _grasping_trajectory_generator(self, grasps, gmodel, approachdist=0.1,
+                                     collisionfree=True):
     for grasp in grasps:
       gmodel.setPreshape(grasp)
       Tgrasp = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
@@ -91,7 +92,7 @@ class ObjectMover(object):
 
       gripper_pose = openravepy.poseFromMatrix(Tgrasp).tolist()
       xyz_target = gripper_pose[4:7]
-      approach = gmodel.getGlobalApproachDir(grasp) * 0.1
+      approach = gmodel.getGlobalApproachDir(grasp) * approachdist
       xyz_target[0] -= approach[0]
       xyz_target[1] -= approach[1]
       xyz_target[2] -= approach[2]
@@ -99,56 +100,65 @@ class ObjectMover(object):
       quat_target = openravepy.quatMultiply(gripper_pose[:4],
                                             (0.707, 0, -0.707, 0)).tolist()
 
-      request = {
-        "basic_info" : {
-          "n_steps" : 10,
-          "manip" : "rightarm", # see below for valid values
-          "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
-        },
-        "costs" : [
-        {
-          "type" : "joint_vel", # joint-space velocity cost
-          "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
-          # Also valid: "coeffs" : [7,6,5,4,3,2,1]
-        },
-        {
-          "type" : "collision",
-          "name" :"collision", # Shorten name so printed table will be prettier
-          "params" : {
-            "continuous": True, 
-            "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-            "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-          }
-        }
-        ],
-        "constraints" : [
-        {
-          "type" : "pose",
-          "params" : {"xyz" : xyz_target,
-                      "wxyz" : quat_target,
-                      "link": "r_gripper_tool_frame"}
-        }],
-        "init_info" : {
-            "type" : "straight_line", # straight line in joint space.
-            "endpoint" : init_joints.tolist()
+      traj, collisions = self._trajectory_generator(xyz_target, quat_target,
+                                                        init_joints,
+                                                        collisionfree)
+      if traj is None:
+        continue
+      return traj, collisions
+      
+    return None, set()
+
+  def _trajectory_generator(self, pos, rot, init_joints,
+                            collisionfree=True):
+    # trajoptpy.SetInteractive(True)
+    request = {
+      "basic_info" : {
+        "n_steps" : 10,
+        "manip" : "rightarm", # see below for valid values
+        "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
+      },
+      "costs" : [
+      {
+        "type" : "joint_vel", # joint-space velocity cost
+        "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
+        # Also valid: "coeffs" : [7,6,5,4,3,2,1]
+      },
+      {
+        "type" : "collision",
+        "name" :"collision", # Shorten name so printed table will be prettier
+        "params" : {
+          "continuous": True, 
+          "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+          "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
         }
       }
-      s = json.dumps(request)
-      prob = trajoptpy.ConstructProblem(s, self.env)
-      result = trajoptpy.OptimizeProblem(prob) # do optimization
-      traj = result.GetTraj()
-      traj_obj = utils.array_to_traj(self.robot, traj)
-      # print "Got a trajectory!"
+      ],
+      "constraints" : [
+      {
+        "type" : "pose",
+        "params" : {"xyz" : pos,
+                    "wxyz" : rot,
+                    "link": "r_gripper_tool_frame"}
+      }],
+      "init_info" : {
+          "type" : "straight_line", # straight line in joint space.
+          "endpoint" : init_joints.tolist()
+      }
+    }
+    s = json.dumps(request)
+    prob = trajoptpy.ConstructProblem(s, self.env)
+    result = trajoptpy.OptimizeProblem(prob) # do optimization
+    traj = result.GetTraj()
+    # print "Got a trajectory!"
 
-      collisions = self.collision_checker.get_collisions(traj)
-      # print "Collisions: {}".format(collisions)
+    collisions = self.collision_checker.get_collisions(traj)
+    # print "Collisions: {}".format(collisions)
 
-      if collisionfree and collisions:
-        continue
+    if collisionfree and collisions:
+      return None, set()
 
-      return traj_obj, collisions
-
-    return None, set()
+    return traj, collisions
 
   def _get_min_col_grasping_pose(self, obj_to_grasp, gmodel):
     min_col = float('inf')
