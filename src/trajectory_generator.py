@@ -143,7 +143,7 @@ class GraspTrajectoryGenerator(object):
     self.manip = self.robot.GetActiveManipulator()
     self.unmovable_objects = unmovable_objects
     self.pregrasp_trajectory_generator = TrajectoryGenerator(self.env)
-    self.grasp_trajectory_generator = TrajectoryGenerator(self.env, 2)
+    self.grasp_trajectory_generator = TrajectoryGenerator(self.env, 5)
 
   def generate_grasping_traj(self, obj, grasp_pose_list, collisionfree=True):
     for grasp_pose, pre_grasp_pose in grasp_pose_list:
