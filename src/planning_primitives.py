@@ -627,6 +627,7 @@ class PlanParser(object):
             
 def initOpenRave(viewer = False, envFile = None):
     env = openravepy.Environment()
+    env.StopSimulation()
     if viewer: 
         env.SetViewer('qtcoin')
 

@@ -2,6 +2,7 @@ import numpy as np
 import openravepy
 import re
 import math
+import trajoptpy
 
 pre_grasps = np.array([[ -3.14269681e-01,   1.11111111e-01,   9.42809042e-01,
                          -8.88888889e-01,   3.14269681e-01,  -3.33333333e-01,
@@ -475,3 +476,11 @@ def array_to_traj(robot, a, dt=1):
       spec.InsertDeltaTime(pt, 0 if i == 0 else dt)
       traj.Insert(i, pt)
     return traj
+
+def exclude_robot_grabbed_collisions(robot, grabbed):
+  env = robot.GetEnv()
+  cc = trajoptpy.GetCollisionChecker(env)
+  for robotlink in robot.GetLinks():
+    for grabbedlink in grabbed.GetLinks():
+      cc.ExcludeCollisionPair(robotlink, grabbedlink)
+  cc.ExcludeCollisionPair(grabbedlink, grabbedlink)

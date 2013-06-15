@@ -25,14 +25,14 @@ class TrajectoryGenerator(object):
       self.robot.SetDOFLimits(self.lower, self.upper)
 
       if init_joints is None:
-        mat = openravepy.matrixFromPose(rot + pos)
-
-        if collisionfree:
-          init_joints = self.manip.FindIKSolution(mat,
-            openravepy.IkFilterOptions.CheckEnvCollisions)
-        else:
-          init_joints = self.manip.FindIKSolution(mat,
-            openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
+        init_info = {
+          "type" : "stationary"
+        }
+      else:
+        init_info = {
+          "type" : "straight_line", # straight line in joint space.
+          "endpoint" : init_joints.tolist()
+        }
 
       request = {
         "basic_info" : {
@@ -43,24 +43,24 @@ class TrajectoryGenerator(object):
         "costs" : [
         {
           "type" : "joint_vel", # joint-space velocity cost
-          "params": {"coeffs" : [50]} # a list of length one is automatically expanded to a list of length n_dofs
+          "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
           # Also valid: "coeffs" : [7,6,5,4,3,2,1]
         },
-        {
-          "type" : "collision",
-          "name" : "col", # Shorten name so printed table will be prettier
-          "params" : {
-            "continuous":False,
-            "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-            "dist_pen" : [0] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-          }
-        },
+        # {
+        #   "type" : "collision",
+        #   "name" : "col", # Shorten name so printed table will be prettier
+        #   "params" : {
+        #     "continuous":False,
+        #     "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+        #     "dist_pen" : [0.02] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+        #   }
+        # },
         {
           "type" : "collision",
           "name" : "cont_col", # Shorten name so printed table will be prettier
           "params" : {
-            "coeffs" : [40], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-            "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+            "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+            "dist_pen" : [0.02] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
           }
         }],
         "constraints" : [
@@ -72,10 +72,7 @@ class TrajectoryGenerator(object):
                       "pos_coeffs" : [20, 20, 20],
                       "rot_coeffs" : [20, 20, 20]}
         }],
-        "init_info" : {
-            "type" : "straight_line", # straight line in joint space.
-            "endpoint" : init_joints.tolist()
-        }
+        "init_info" : init_info
       }
 
       prob = trajoptpy.ConstructProblem(json.dumps(request), self.env)
@@ -102,24 +99,24 @@ class TrajectoryGenerator(object):
         "costs" : [
         {
           "type" : "joint_vel", # joint-space velocity cost
-          "params": {"coeffs" : [10]} # a list of length one is automatically expanded to a list of length n_dofs
+          "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
           # Also valid: "coeffs" : [7,6,5,4,3,2,1]
         },
-        {
-          "type" : "collision",
-          "name" : "col", # Shorten name so printed table will be prettier
-          "params" : {
-            "continuous": False,
-            "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-            "dist_pen" : [0.00] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-          }
-        },
+        # {
+        #   "type" : "collision",
+        #   "name" : "col", # Shorten name so printed table will be prettier
+        #   "params" : {
+        #     "continuous": False,
+        #     "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+        #     "dist_pen" : [0.02] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+        #   }
+        # },
         {
           "type" : "collision",
           "name" : "cont_col", # Shorten name so printed table will be prettier
           "params" : {
             "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-            "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+            "dist_pen" : [0.02] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
           }
         }],
         "constraints" : [

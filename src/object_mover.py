@@ -41,22 +41,23 @@ class ObjectMover(object):
 
     # close gripper
     self.robot.Grab(obj)
+    utils.exclude_robot_grabbed_collisions(self.robot, obj)
     if self.use_ros:
       self.joint_mover.open_right_gripper(False)
 
     # lift object
-    link = self.robot.GetLink('r_gripper_tool_frame')
-    mat = link.GetTransform()
-    mat[2][3] += 0.3
-    pose = openravepy.poseFromMatrix(mat).tolist()
-    pos = pose[4:7]
-    rot = pose[:4]
-    traj, _ = self.trajectory_generator.generate_traj(pos, rot, n_steps=2,
-                                                      collisionfree=False)
-    self._execute_traj(traj)
+    # link = self.robot.GetLink('r_gripper_tool_frame')
+    # mat = link.GetTransform()
+    # mat[2][3] += 0.010
+    # pose = openravepy.poseFromMatrix(mat).tolist()
+    # pos = pose[4:7]
+    # rot = pose[:4]
+    # traj, _ = self.trajectory_generator.generate_traj(pos, rot, n_steps=2,
+    #                                                   collisionfree=False)
+    # self._execute_traj(traj)
 
   def drop(self, obj, table):
-    pos1 = [0.4, -0.7, 1.5]
+    pos1 = [0.4, -0.7, 1.1]
     rot = [0.7071, 0, 0, -0.7071]
     traj1, _ = self.trajectory_generator.generate_traj(pos1, rot,
                                                       collisionfree=False)
@@ -66,7 +67,7 @@ class ObjectMover(object):
       self.robot.GetManipulator('rightarm').GetArmIndices())
     self.robot.SetDOFValues(traj1[-1],
       self.robot.GetManipulator('rightarm').GetArmIndices())
-    pos2 = [0.1, -0.7, 0.9]
+    pos2 = [0.1, -0.7, 0.7]
     traj2, _ = self.trajectory_generator.generate_traj(pos2, rot,
                                                       collisionfree=False)
     # reset
@@ -92,14 +93,16 @@ class ObjectMover(object):
   def _execute_traj(self, traj):
     traj_obj = utils.array_to_traj(self.robot, traj)
     print("Executing trajectory...")
-    self.robot.GetController().SetPath(traj_obj)
+    # self.robot.GetController().SetPath(traj_obj)
+    # self.robot.WaitForController(0)
+    # self.robot.GetController().Reset()
+    self.robot.SetDOFValues(traj[-1],
+      self.robot.GetManipulator('rightarm').GetArmIndices()) #TODO: TEMP
     if self.use_ros:
-      self.pr2.rarm.execute_openrave_trajectory(traj_obj)
+      raw_input("Press enter to run trajectory on PR2")
+      # self.pr2.rarm.execute_openrave_trajectory(traj_obj)
       # self.pr2.join_all() # Doesn't work in sim for some reason..
       raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
-    else:
-      self.robot.WaitForController(0)
-      self.robot.GetController().Reset()
     print("Trajectory execution complete!")
 
   def _get_grasping_trajectory(self, obj_to_grasp):
