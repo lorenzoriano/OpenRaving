@@ -11,27 +11,25 @@ class TrajectoryGenerator(object):
     self.manip = self.robot.GetActiveManipulator()
     self.n_steps = n_steps
     self.collision_checker = CollisionChecker(self.env)
-    # self.viewer = trajoptpy.GetViewer(self.env)
-    # trajoptpy.SetInteractive(True)
+    self.viewer = trajoptpy.GetViewer(self.env)
+    trajoptpy.SetInteractive(True)
     self.lower,self.upper = self.robot.GetDOFLimits()
     self.lower -= .3
     self.upper += .3
 
-  def generate_traj(self, pos, rot,
-                    init_joints=None,
-                    collisionfree=True,
-                    n_steps=None):
+  def _generate_traj(self, goal_constraint, n_steps, collisionfree,
+                     joint_targets):
     with self.env:
       self.robot.SetDOFLimits(self.lower, self.upper)
 
-      if init_joints is None:
+      if joint_targets is None:
         init_info = {
           "type" : "stationary"
         }
       else:
         init_info = {
           "type" : "straight_line", # straight line in joint space.
-          "endpoint" : init_joints.tolist()
+          "endpoint" : joint_targets
         }
 
       request = {
@@ -44,7 +42,6 @@ class TrajectoryGenerator(object):
         {
           "type" : "joint_vel", # joint-space velocity cost
           "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
-          # Also valid: "coeffs" : [7,6,5,4,3,2,1]
         },
         # {
         #   "type" : "collision",
@@ -64,19 +61,12 @@ class TrajectoryGenerator(object):
           }
         }],
         "constraints" : [
-        {
-          "type" : "pose",
-          "params" : {"xyz" : pos,
-                      "wxyz" : rot,
-                      "link": "r_gripper_tool_frame",
-                      "pos_coeffs" : [20, 20, 20],
-                      "rot_coeffs" : [20, 20, 20]}
-        }],
+          goal_constraint
+        ],
         "init_info" : init_info
       }
 
       prob = trajoptpy.ConstructProblem(json.dumps(request), self.env)
-
       result = trajoptpy.OptimizeProblem(prob)
       traj = result.GetTraj()
 
@@ -86,55 +76,30 @@ class TrajectoryGenerator(object):
 
       return traj, collisions
 
-  def generate_traj_with_joints(self, joint_target, n_steps=None):
-    with self.env:
-      self.robot.SetDOFLimits(self.lower, self.upper)
+  def generate_traj_with_pose(self, pos, rot,
+                              collisionfree=True,
+                              joint_targets=None,
+                              n_steps=None):
+    goal_constraint = {
+      "type" : "pose",
+      "params" : {"xyz" : pos,
+                  "wxyz" : rot,
+                  "link": "r_gripper_tool_frame",
+                  "pos_coeffs" : [20, 20, 20],
+                  "rot_coeffs" : [20, 20, 20]}
+    }
+    return self._generate_traj(goal_constraint, n_steps, collisionfree,
+                               joint_targets)
 
-      request = {
-        "basic_info" : {
-          "n_steps" : self.n_steps if (n_steps is None) else n_steps,
-          "manip" : "rightarm", # see below for valid values
-          "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
-        },
-        "costs" : [
-        {
-          "type" : "joint_vel", # joint-space velocity cost
-          "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
-          # Also valid: "coeffs" : [7,6,5,4,3,2,1]
-        },
-        # {
-        #   "type" : "collision",
-        #   "name" : "col", # Shorten name so printed table will be prettier
-        #   "params" : {
-        #     "continuous": False,
-        #     "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-        #     "dist_pen" : [0.02] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-        #   }
-        # },
-        {
-          "type" : "collision",
-          "name" : "cont_col", # Shorten name so printed table will be prettier
-          "params" : {
-            "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-            "dist_pen" : [0.02] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-          }
-        }],
-        "constraints" : [
-        {
-          "type" : "joint", # joint-space target
-          "params" : {"vals" : joint_target } # length of vals = # dofs of manip
-        }
-        ],
-        "init_info" : {
-            "type" : "straight_line", # straight line in joint space.
-            "endpoint" : joint_target
-        }
-      }
-
-      prob = trajoptpy.ConstructProblem(json.dumps(request), self.env)
-      result = trajoptpy.OptimizeProblem(prob)
-      traj = result.GetTraj()
-      return traj
+  def generate_traj_with_joints(self, joint_targets,
+                                collisionfree=True,
+                                n_steps=None):
+    goal_constraint = {
+      "type" : "joint",
+      "params" : {"vals" : joint_targets}
+    }
+    return self._generate_traj(goal_constraint, n_steps, collisionfree,
+                               joint_targets)
 
 class GraspTrajectoryGenerator(object):
   def __init__(self, env, unmovable_objects=set()):
@@ -175,8 +140,9 @@ class GraspTrajectoryGenerator(object):
       quat_target1 = openravepy.quatMultiply(gripper_pose1[:4],
                                             (0.7071, 0, -0.7071, 0)).tolist()
 
-      traj1, collisions1 = self.pregrasp_trajectory_generator.generate_traj(
-        xyz_target1, quat_target1, init_joints1, collisionfree)
+      traj1, collisions1 = self.pregrasp_trajectory_generator.generate_traj_with_pose(
+        xyz_target1, quat_target1,
+        collisionfree=collisionfree, joint_targets=init_joints1.tolist())
       if traj1 is None:
         continue
 
@@ -193,8 +159,9 @@ class GraspTrajectoryGenerator(object):
                                             (0.7071, 0, -0.7071, 0)).tolist()
 
       self.env.Remove(obj)
-      traj2, collisions2 = self.grasp_trajectory_generator.generate_traj(
-        xyz_target2, quat_target2, init_joints2, collisionfree)
+      traj2, collisions2 = self.grasp_trajectory_generator.generate_traj_with_pose(
+        xyz_target2, quat_target2,
+        collisionfree=collisionfree, joint_targets=init_joints2.tolist())
       self.env.AddKinBody(obj)
 
       # reset 

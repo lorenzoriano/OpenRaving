@@ -30,7 +30,7 @@ class ObjectMover(object):
 
     # always start at same place
     joints = [-1.2, 0.2, -0.8, -1.8, -3.0, -0.3, 3.0]
-    traj = self.trajectory_generator.generate_traj_with_joints(joints)
+    traj, _ = self.trajectory_generator.generate_traj_with_joints(joints)
     self._execute_traj(traj)
 
     # trajectory to grasp
@@ -57,8 +57,8 @@ class ObjectMover(object):
   def drop(self, obj, table):
     pos1 = [0.4, -0.7, 1.1]
     rot = [0.7071, 0, 0, -0.7071]
-    traj1, _ = self.trajectory_generator.generate_traj(pos1, rot,
-                                                      collisionfree=False)
+    traj1, _ = self.trajectory_generator.generate_traj_with_pose(
+      pos1, rot, collisionfree=False)
 
     # saving values
     orig_values = self.robot.GetDOFValues(
@@ -66,8 +66,8 @@ class ObjectMover(object):
     self.robot.SetDOFValues(traj1[-1],
       self.robot.GetManipulator('rightarm').GetArmIndices())
     pos2 = [0.0, -0.7, 1.0]
-    traj2, _ = self.trajectory_generator.generate_traj(pos2, rot,
-                                                      collisionfree=False)
+    traj2, _ = self.trajectory_generator.generate_traj_with_pose(
+      pos2, rot, collisionfree=False)
     # reset
     self.robot.SetDOFValues(orig_values,
       self.robot.GetManipulator('rightarm').GetArmIndices())
@@ -89,6 +89,7 @@ class ObjectMover(object):
     obj.SetTransform(T)
 
   def _execute_traj(self, traj):
+    print traj
     traj_obj = utils.array_to_traj(self.robot, traj)
     print("Executing trajectory...")
     # self.robot.GetController().SetPath(traj_obj)
