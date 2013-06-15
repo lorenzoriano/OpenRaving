@@ -43,7 +43,8 @@ class ObjectMover(object):
     self.robot.Grab(obj)
     utils.exclude_robot_grabbed_collisions(self.robot, obj)
     if self.use_ros:
-      self.joint_mover.close_right_gripper(True)
+      #self.joint_mover.close_right_gripper(True)
+      self.pr2.rgrip.close()
 
     # lift object
     # link = self.robot.GetLink('r_gripper_tool_frame')
@@ -67,7 +68,7 @@ class ObjectMover(object):
       self.robot.GetManipulator('rightarm').GetArmIndices())
     self.robot.SetDOFValues(traj1[-1],
       self.robot.GetManipulator('rightarm').GetArmIndices())
-    pos2 = [0.1, -0.7, 0.7]
+    pos2 = [0.0, -0.7, 1.0]
     traj2, _ = self.trajectory_generator.generate_traj(pos2, rot,
                                                       collisionfree=False)
     # reset
@@ -79,7 +80,8 @@ class ObjectMover(object):
     # open gripper
     self.robot.Release(obj)
     if self.use_ros:
-      self.joint_mover.open_right_gripper(True)
+      #self.joint_mover.open_right_gripper(True)
+      self.pr2.rgrip.open()
 
     # transforming the object
     T = obj.GetTransform()
