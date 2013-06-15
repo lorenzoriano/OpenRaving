@@ -52,27 +52,37 @@ class TrajectoryGenerator(object):
         #     "dist_pen" : [0.02] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
         #   }
         # },
-        {
-          "type" : "collision",
-          "name" : "cont_col", # Shorten name so printed table will be prettier
-          "params" : {
-            "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-            "dist_pen" : [0.04] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-          }
-        }],
+        # {
+        #   "type" : "collision",
+        #   "name" : "cont_col", # Shorten name so printed table will be prettier
+        #   "params" : {
+        #     "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+        #     "dist_pen" : [0.00] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+        #   }
+        # }
+        ],
         "constraints" : [
           goal_constraint
         ],
         "init_info" : init_info
       }
 
-      # add high penalty for collision if collisionfree
       if collisionfree:
         request['costs'].append({
           "type" : "collision",
           "name" : "cont_col_free",
           "params" : {
-            "coeffs" : [200],
+            "coeffs" : [40],
+            "dist_pen" : [0.04]
+          }
+        })
+      else:
+        # TODO: replace with better cost function
+        request['costs'].append({
+          "type" : "collision",
+          "name" : "cont_col",
+          "params" : {
+            "coeffs" : [5],
             "dist_pen" : [0.01]
           }
         })
@@ -120,7 +130,7 @@ class GraspTrajectoryGenerator(object):
     self.manip = self.robot.GetActiveManipulator()
     self.unmovable_objects = unmovable_objects
     self.pregrasp_trajectory_generator = TrajectoryGenerator(self.env)
-    self.grasp_trajectory_generator = TrajectoryGenerator(self.env, 5)
+    self.grasp_trajectory_generator = TrajectoryGenerator(self.env, 2)
 
   def generate_grasping_traj(self, obj, grasp_pose_list, collisionfree=True):
     for grasp_pose, pre_grasp_pose in grasp_pose_list:
