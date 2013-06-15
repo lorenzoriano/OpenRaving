@@ -19,16 +19,14 @@ class ObjectMover(object):
     self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env,
       unmovable_objects)
     if self.use_ros:
-      from pr2_control_utilities.pr2_joint_mover import PR2JointMover
       self.pr2 = PlannerPR2(self.robot)
-      self.joint_mover = PR2JointMover()
 
   def clear_cache(self):
     self.traj_cache = {}
 
   def pickup(self, obj):
     if self.use_ros:
-      self.joint_mover.open_right_gripper(True)
+      self.pr2.rgrip.open()
 
     # always start at same place
     joints = [-1.2, 0.2, -0.8, -1.8, -3.0, -0.3, 3.0]
@@ -43,7 +41,6 @@ class ObjectMover(object):
     self.robot.Grab(obj)
     utils.exclude_robot_grabbed_collisions(self.robot, obj)
     if self.use_ros:
-      #self.joint_mover.close_right_gripper(True)
       self.pr2.rgrip.close()
 
     # lift object
@@ -80,7 +77,6 @@ class ObjectMover(object):
     # open gripper
     self.robot.Release(obj)
     if self.use_ros:
-      #self.joint_mover.open_right_gripper(True)
       self.pr2.rgrip.open()
 
     # transforming the object
