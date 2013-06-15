@@ -132,15 +132,16 @@ class GraspTrajectoryGenerator(object):
         init_joints1 = self.manip.FindIKSolution(pre_grasp_pose,
           openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
 
-      # find IK for grasp
-      self.env.Remove(obj)
-      if collisionfree:
-        init_joints2 = self.manip.FindIKSolution(grasp_pose,
-          openravepy.IkFilterOptions.CheckEnvCollisions)
-      else:
-        init_joints2 = self.manip.FindIKSolution(grasp_pose,
-          openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
-      self.env.AddKinBody(obj)
+      with self.env:
+        # find IK for grasp
+        self.env.Remove(obj)
+        if collisionfree:
+          init_joints2 = self.manip.FindIKSolution(grasp_pose,
+            openravepy.IkFilterOptions.CheckEnvCollisions)
+        else:
+          init_joints2 = self.manip.FindIKSolution(grasp_pose,
+            openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
+        self.env.AddKinBody(obj)
 
       if (init_joints1 is None) or (init_joints2 is None):
         continue
