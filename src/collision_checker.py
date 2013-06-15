@@ -14,10 +14,11 @@ class CollisionChecker(object):
 
     collisions = set()
     traj_up = mu.interp2d(np.linspace(0,1,n), np.linspace(0,1,len(traj)), traj)
-    for joint_values in traj_up:
-      self.robot.SetDOFValues(joint_values, self.manip.GetArmIndices())
-      for obj in utils.get_all_collisions(self.robot, self.env):
-        collisions.add(obj)
+    with self.env:
+      for joint_values in traj_up:
+        self.robot.SetDOFValues(joint_values, self.manip.GetArmIndices())
+        for obj in utils.get_all_collisions(self.robot, self.env):
+          collisions.add(obj)
 
-    self.robot.SetDOFValues(orig_values, self.manip.GetArmIndices())
+      self.robot.SetDOFValues(orig_values, self.manip.GetArmIndices())
     return collisions

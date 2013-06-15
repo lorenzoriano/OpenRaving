@@ -62,16 +62,17 @@ class ObjectMover(object):
 
     traj1, _ = self.trajectory_generator.generate_traj_with_pose(pos1, rot)
 
-    # saving values
-    orig_values = self.robot.GetDOFValues(
-      self.robot.GetManipulator('rightarm').GetArmIndices())
-    self.robot.SetDOFValues(traj1[-1],
-      self.robot.GetManipulator('rightarm').GetArmIndices())
-    pos2 = [0.0, -0.7, 1.0]
-    traj2, _ = self.trajectory_generator.generate_traj_with_pose(pos2, rot)
-    # reset
-    self.robot.SetDOFValues(orig_values,
-      self.robot.GetManipulator('rightarm').GetArmIndices())
+    with self.env:
+      # saving values
+      orig_values = self.robot.GetDOFValues(
+        self.robot.GetManipulator('rightarm').GetArmIndices())
+      self.robot.SetDOFValues(traj1[-1],
+        self.robot.GetManipulator('rightarm').GetArmIndices())
+      pos2 = [0.0, -0.7, 1.0]
+      traj2, _ = self.trajectory_generator.generate_traj_with_pose(pos2, rot)
+      # reset
+      self.robot.SetDOFValues(orig_values,
+        self.robot.GetManipulator('rightarm').GetArmIndices())
 
     self._execute_traj(traj1.tolist() + traj2.tolist())
 

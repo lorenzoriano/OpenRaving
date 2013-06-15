@@ -158,27 +158,28 @@ class GraspTrajectoryGenerator(object):
       if traj1 is None:
         continue
 
-      # find trajectory to grasp
-      orig_values = self.robot.GetDOFValues(
-        self.robot.GetManipulator('rightarm').GetArmIndices())
-      self.robot.SetDOFValues(traj1[-1],
-        self.robot.GetManipulator('rightarm').GetArmIndices())
+      with self.env:
+        # find trajectory to grasp
+        orig_values = self.robot.GetDOFValues(
+          self.robot.GetManipulator('rightarm').GetArmIndices())
+        self.robot.SetDOFValues(traj1[-1],
+          self.robot.GetManipulator('rightarm').GetArmIndices())
 
-      gripper_pose2 = openravepy.poseFromMatrix(grasp_pose).tolist()
-      xyz_target2 = gripper_pose2[4:7]
-      # quaternions are rotated by pi/2 around y for some reason...
-      quat_target2 = openravepy.quatMultiply(gripper_pose2[:4],
-                                            (0.7071, 0, -0.7071, 0)).tolist()
+        gripper_pose2 = openravepy.poseFromMatrix(grasp_pose).tolist()
+        xyz_target2 = gripper_pose2[4:7]
+        # quaternions are rotated by pi/2 around y for some reason...
+        quat_target2 = openravepy.quatMultiply(gripper_pose2[:4],
+                                              (0.7071, 0, -0.7071, 0)).tolist()
 
-      self.env.Remove(obj)
-      traj2, collisions2 = self.grasp_trajectory_generator.generate_traj_with_pose(
-        xyz_target2, quat_target2,
-        collisionfree=collisionfree, joint_targets=init_joints2.tolist())
-      self.env.AddKinBody(obj)
+        self.env.Remove(obj)
+        traj2, collisions2 = self.grasp_trajectory_generator.generate_traj_with_pose(
+          xyz_target2, quat_target2,
+          collisionfree=collisionfree, joint_targets=init_joints2.tolist())
+        self.env.AddKinBody(obj)
 
-      # reset 
-      self.robot.SetDOFValues(orig_values,
-        self.robot.GetManipulator('rightarm').GetArmIndices())
+        # reset
+        self.robot.SetDOFValues(orig_values,
+          self.robot.GetManipulator('rightarm').GetArmIndices())
 
       if traj2 is None:
         continue
