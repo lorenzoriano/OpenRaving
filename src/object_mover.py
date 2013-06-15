@@ -93,14 +93,9 @@ class ObjectMover(object):
     print traj
     traj_obj = utils.array_to_traj(self.robot, traj)
     print("Executing trajectory...")
-    # self.robot.GetController().SetPath(traj_obj)
-    # self.robot.WaitForController(0)
-    # self.robot.GetController().Reset()
-    self.robot.SetDOFValues(traj[-1],
-      self.robot.GetManipulator('rightarm').GetArmIndices()) #TODO: TEMP
+    utils.run_trajectory(self.robot, traj)
     if self.use_ros:
       raw_input("Press enter to run trajectory on PR2")
-      #self.pr2.rarm.execute_openrave_trajectory(traj_obj)
       self.pr2.rarm.follow_joint_trajectory(traj)
       # self.pr2.join_all() # Doesn't work in sim for some reason..
       raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above

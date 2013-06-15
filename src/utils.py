@@ -1,8 +1,10 @@
+import trajoptpy.math_utils as mu
 import numpy as np
 import openravepy
 import re
 import math
 import trajoptpy
+import time
 
 pre_grasps = np.array([[ -3.14269681e-01,   1.11111111e-01,   9.42809042e-01,
                          -8.88888889e-01,   3.14269681e-01,  -3.33333333e-01,
@@ -484,3 +486,16 @@ def exclude_robot_grabbed_collisions(robot, grabbed):
     for grabbedlink in grabbed.GetLinks():
       cc.ExcludeCollisionPair(robotlink, grabbedlink)
   cc.ExcludeCollisionPair(grabbedlink, grabbedlink)
+
+def run_trajectory(robot, traj, animationtime=4.0, n=100):
+  """
+  Crude way of executing trajectories and update the OpenRave environment
+  without having to enable OpenRave simulation.
+  """
+  traj_up = mu.interp2d(np.linspace(0,1,n), np.linspace(0,1,len(traj)), traj)
+  sleep_time = float(animationtime) / len(traj_up)
+  for joint_values in traj_up:
+    with robot.GetEnv():
+      robot.SetDOFValues(joint_values,
+        robot.GetManipulator('rightarm').GetArmIndices())
+    time.sleep(sleep_time)

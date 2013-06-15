@@ -11,8 +11,8 @@ class TrajectoryGenerator(object):
     self.manip = self.robot.GetActiveManipulator()
     self.n_steps = n_steps
     self.collision_checker = CollisionChecker(self.env)
-    self.viewer = trajoptpy.GetViewer(self.env)
-    trajoptpy.SetInteractive(True)
+    # self.viewer = trajoptpy.GetViewer(self.env)
+    # trajoptpy.SetInteractive(True)
     self.lower,self.upper = self.robot.GetDOFLimits()
     self.lower -= .3
     self.upper += .3
