@@ -5,7 +5,7 @@ from collision_checker import CollisionChecker
 
 
 class TrajectoryGenerator(object):
-  def __init__(self, env, n_steps=10):
+  def __init__(self, env, n_steps=30):
     self.env = env
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
@@ -57,7 +57,7 @@ class TrajectoryGenerator(object):
           "name" : "cont_col", # Shorten name so printed table will be prettier
           "params" : {
             "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-            "dist_pen" : [0.02] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+            "dist_pen" : [0.04] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
           }
         }],
         "constraints" : [
@@ -65,6 +65,17 @@ class TrajectoryGenerator(object):
         ],
         "init_info" : init_info
       }
+
+      # add high penalty for collision if collisionfree
+      if collisionfree:
+        request['costs'].append({
+          "type" : "collision",
+          "name" : "cont_col_free",
+          "params" : {
+            "coeffs" : [200],
+            "dist_pen" : [0.01]
+          }
+        })
 
       prob = trajoptpy.ConstructProblem(json.dumps(request), self.env)
       result = trajoptpy.OptimizeProblem(prob)
@@ -80,6 +91,7 @@ class TrajectoryGenerator(object):
                               collisionfree=True,
                               joint_targets=None,
                               n_steps=None):
+
     goal_constraint = {
       "type" : "pose",
       "params" : {"xyz" : pos,

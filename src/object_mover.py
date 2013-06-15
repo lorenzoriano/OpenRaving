@@ -59,9 +59,8 @@ class ObjectMover(object):
     rot_z = [0.7071, 0, 0, -0.7071]
     rot_x = [0, 1, 0, 0]
     rot = openravepy.quatMult(rot_z, rot_x).tolist()
-    
-    traj1, _ = self.trajectory_generator.generate_traj_with_pose(
-      pos1, rot, collisionfree=False)
+
+    traj1, _ = self.trajectory_generator.generate_traj_with_pose(pos1, rot)
 
     # saving values
     orig_values = self.robot.GetDOFValues(
@@ -69,8 +68,7 @@ class ObjectMover(object):
     self.robot.SetDOFValues(traj1[-1],
       self.robot.GetManipulator('rightarm').GetArmIndices())
     pos2 = [0.0, -0.7, 1.0]
-    traj2, _ = self.trajectory_generator.generate_traj_with_pose(
-      pos2, rot, collisionfree=False)
+    traj2, _ = self.trajectory_generator.generate_traj_with_pose(pos2, rot)
     # reset
     self.robot.SetDOFValues(orig_values,
       self.robot.GetManipulator('rightarm').GetArmIndices())
