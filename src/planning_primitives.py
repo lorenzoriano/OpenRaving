@@ -168,107 +168,107 @@ class Executor(object):
         self.object_mover.drop(obj, table)
         return
 
-        if obj is None:
-            raise ValueError("Object %s does not exist" % obj_name)
+        # if obj is None:
+        #     raise ValueError("Object %s does not exist" % obj_name)
         
-        if table_name.startswith("dest_"):
-            #this is a fixed location!!!
-            T = getattr(tray_world, table_name, None)            
-            if T is None:
-                raise ValueError("The location %s is unknown! check spelling?" % table_name)
-            T = T.copy()
-            #put the gripper facing down
-            gripper_angle = (np.pi, 0., 0) #just got this from trial and test
-            rot_mat = openravepy.rotationMatrixFromAxisAngle(gripper_angle)            
-            T[:3,:3] = rot_mat            
-            T[2, 3] += 0.03
+        # if table_name.startswith("dest_"):
+        #     #this is a fixed location!!!
+        #     T = getattr(tray_world, table_name, None)            
+        #     if T is None:
+        #         raise ValueError("The location %s is unknown! check spelling?" % table_name)
+        #     T = T.copy()
+        #     #put the gripper facing down
+        #     gripper_angle = (np.pi, 0., 0) #just got this from trial and test
+        #     rot_mat = openravepy.rotationMatrixFromAxisAngle(gripper_angle)            
+        #     T[:3,:3] = rot_mat            
+        #     T[2, 3] += 0.03
             
-            try:
-                (pose,
-                 sol,
-                 torso_angle) = generate_reaching_poses.get_collision_free_ik_pose(
-                     self.getGoodBodies(),
-                     self.env,
-                     obj,
-                     self.robot,
-                     T,
-                     only_reachable=False,
-                     max_trials =1000
-                 )
-            except generate_reaching_poses.ObjectMoveError:
-                raise ExecutingException("Putting down on location has problems!")            
+        #     try:
+        #         (pose,
+        #          sol,
+        #          torso_angle) = generate_reaching_poses.get_collision_free_ik_pose(
+        #              self.getGoodBodies(),
+        #              self.env,
+        #              obj,
+        #              self.robot,
+        #              T,
+        #              only_reachable=False,
+        #              max_trials =1000
+        #          )
+        #     except generate_reaching_poses.ObjectMoveError:
+        #         raise ExecutingException("Putting down on location has problems!")            
         
-        else:           
-            table = self.env.GetKinBody(table_name)        
-            if table is None:
-                raise ValueError("Object %s does not exist" % table_name)
+        # else:           
+        #     table = self.env.GetKinBody(table_name)        
+        #     if table is None:
+        #         raise ValueError("Object %s does not exist" % table_name)
 
-            try:
-                pose, sol, torso_angle = generate_reaching_poses.get_collision_free_surface_pose(self.getGoodBodies(),
-                                                                                          self.robot, 
-                                                                                          table,
-                                                                                          )
-            except generate_reaching_poses.ObjectMoveError, e:
-                raise e
+        #     try:
+        #         pose, sol, torso_angle = generate_reaching_poses.get_collision_free_surface_pose(self.getGoodBodies(),
+        #                                                                                   self.robot, 
+        #                                                                                   table,
+        #                                                                                   )
+        #     except generate_reaching_poses.ObjectMoveError, e:
+        #         raise e
         
-        if use_ros:
-            # Move arm to drop location
-            p = (0.3, -0.5, 0.3)
-            q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
-            res = self.arm_mover.move_right_arm(p, q, '/torso_lift_link', 30)
-            if not res:
-                e = ExecutingException("ROS putdown step 1 failed")
-                e.robot = self.robot
-                e.object_to_grasp = obj
-                raise e
+        # if use_ros:
+        #     # Move arm to drop location
+        #     p = (0.3, -0.5, 0.3)
+        #     q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
+        #     res = self.arm_mover.move_right_arm(p, q, '/torso_lift_link', 30)
+        #     if not res:
+        #         e = ExecutingException("ROS putdown step 1 failed")
+        #         e.robot = self.robot
+        #         e.object_to_grasp = obj
+        #         raise e
 
-            p = (0.1, -0.8, -0.2)
-            q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
-            res = self.arm_mover.move_right_arm(p, q, '/torso_lift_link', 30)
-            if not res:
-                e = ExecutingException("ROS putdown step 2 failed")
-                e.robot = self.robot
-                e.object_to_grasp = obj
-                raise e
+        #     p = (0.1, -0.8, -0.2)
+        #     q = transformations.quaternion_from_euler(0, 0, -numpy.pi/2)
+        #     res = self.arm_mover.move_right_arm(p, q, '/torso_lift_link', 30)
+        #     if not res:
+        #         e = ExecutingException("ROS putdown step 2 failed")
+        #         e.robot = self.robot
+        #         e.object_to_grasp = obj
+        #         raise e
 
-            # Drop object
-            joint_mover = PR2JointMover()
-            joint_mover.open_right_gripper(True)
+        #     # Drop object
+        #     joint_mover = PR2JointMover()
+        #     joint_mover.open_right_gripper(True)
 
-            # update openrave
-            if use_ros:
-                self.pr2robot.update_rave()
-        else:
-            # self.pause("Moving to location")
-            self.robot.SetTransform(pose)
+        #     # update openrave
+        #     if use_ros:
+        #         self.pr2robot.update_rave()
+        # else:
+        #     # self.pause("Moving to location")
+        #     self.robot.SetTransform(pose)
             
-            # self.pause("Moving arm")
-            self.robot.SetDOFValues([torso_angle],
-                                    [self.robot.GetJointIndex('torso_lift_joint')])
-            self.robot.SetDOFValues(sol,
-                                    self.robot.GetActiveManipulator().GetArmIndices())
+        #     # self.pause("Moving arm")
+        #     self.robot.SetDOFValues([torso_angle],
+        #                             [self.robot.GetJointIndex('torso_lift_joint')])
+        #     self.robot.SetDOFValues(sol,
+        #                             self.robot.GetActiveManipulator().GetArmIndices())
 
-        self.robot.Release(obj)
+        # self.robot.Release(obj)
         
-        #putting the object straight
-        if table_name.startswith("dest_"):
-            print "Putting object in the right location"
-            T = getattr(tray_world, table_name, None)
-        else:
-            T = obj.GetTransform()
-            rot_angle = (np.pi / 2., 0., 0) #got this from the model
-            rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
-            T[:3, :3] = rot_mat
-            _, _, _, _, z = utils.get_object_limits(table)
-            T[2, 3] = z
+        # #putting the object straight
+        # if table_name.startswith("dest_"):
+        #     print "Putting object in the right location"
+        #     T = getattr(tray_world, table_name, None)
+        # else:
+        #     T = obj.GetTransform()
+        #     rot_angle = (np.pi / 2., 0., 0) #got this from the model
+        #     rot_mat = openravepy.rotationMatrixFromAxisAngle(rot_angle)
+        #     T[:3, :3] = rot_mat
+        #     _, _, _, _, z = utils.get_object_limits(table)
+        #     T[2, 3] = z
         
-        obj.SetTransform(T)
-        try:
-            del self.grasping_locations_cache[obj_name]
-        except KeyError:
-            print "funny, object ", obj_name, " was not in cache.. something wrong here!"
-            # raw_input("Press return to continue")    
-        #self.pause()
+        # obj.SetTransform(T)
+        # try:
+        #     del self.grasping_locations_cache[obj_name]
+        # except KeyError:
+        #     print "funny, object ", obj_name, " was not in cache.. something wrong here!"
+        #     # raw_input("Press return to continue")    
+        # #self.pause()
         
     def find_gp(self, object_to_grasp) :
         """"Find a grasping pose
