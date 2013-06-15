@@ -91,7 +91,6 @@ class ObjectMover(object):
     obj.SetTransform(T)
 
   def _execute_traj(self, traj):
-    print traj
     traj_obj = utils.array_to_traj(self.robot, traj)
     print("Executing trajectory...")
     utils.run_trajectory(self.robot, traj)
