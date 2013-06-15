@@ -56,7 +56,10 @@ class ObjectMover(object):
 
   def drop(self, obj, table):
     pos1 = [0.4, -0.7, 1.1]
-    rot = [0.7071, 0, 0, -0.7071]
+    rot_z = [0.7071, 0, 0, -0.7071]
+    rot_x = [0, 1, 0, 0]
+    rot = openravepy.quatMult(rot_z, rot_x).tolist()
+    
     traj1, _ = self.trajectory_generator.generate_traj_with_pose(
       pos1, rot, collisionfree=False)
 
