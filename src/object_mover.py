@@ -43,7 +43,7 @@ class ObjectMover(object):
     self.robot.Grab(obj)
     utils.exclude_robot_grabbed_collisions(self.robot, obj)
     if self.use_ros:
-      self.joint_mover.open_right_gripper(False)
+      self.joint_mover.close_right_gripper(True)
 
     # lift object
     # link = self.robot.GetLink('r_gripper_tool_frame')
@@ -100,7 +100,7 @@ class ObjectMover(object):
       self.robot.GetManipulator('rightarm').GetArmIndices()) #TODO: TEMP
     if self.use_ros:
       raw_input("Press enter to run trajectory on PR2")
-      # self.pr2.rarm.execute_openrave_trajectory(traj_obj)
+      self.pr2.rarm.execute_openrave_trajectory(traj_obj)
       # self.pr2.join_all() # Doesn't work in sim for some reason..
       raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
     print("Trajectory execution complete!")
