@@ -485,7 +485,7 @@ def exclude_robot_grabbed_collisions(robot, grabbed):
   for robotlink in robot.GetLinks():
     for grabbedlink in grabbed.GetLinks():
       cc.ExcludeCollisionPair(robotlink, grabbedlink)
-  cc.ExcludeCollisionPair(grabbedlink, grabbedlink)
+      cc.ExcludeCollisionPair(grabbedlink, grabbedlink)
 
 def run_trajectory(robot, traj, animationtime=4.0, n=100):
   """
