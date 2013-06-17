@@ -60,7 +60,8 @@ class ObjectMover(object):
     rot_x = [0, 1, 0, 0]
     rot = openravepy.quatMult(rot_z, rot_x).tolist()
 
-    traj1, _ = self.trajectory_generator.generate_traj_with_pose(pos1, rot)
+    traj1, _ = self.trajectory_generator.generate_traj_with_pose(pos1, rot,
+      collisionfree=False)
 
     with self.env:
       # saving values
@@ -69,7 +70,8 @@ class ObjectMover(object):
       self.robot.SetDOFValues(traj1[-1],
         self.robot.GetManipulator('rightarm').GetArmIndices())
       pos2 = [0.0, -0.7, 1.0]
-      traj2, _ = self.trajectory_generator.generate_traj_with_pose(pos2, rot)
+      traj2, _ = self.trajectory_generator.generate_traj_with_pose(pos2, rot,
+        collisionfree=False)
       # reset
       self.robot.SetDOFValues(orig_values,
         self.robot.GetManipulator('rightarm').GetArmIndices())
@@ -97,8 +99,8 @@ class ObjectMover(object):
     if self.use_ros:
       raw_input("Press enter to run trajectory on PR2")
       self.pr2.rarm.follow_joint_trajectory(traj)
-      # self.pr2.join_all() # Doesn't work in sim for some reason..
-      raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
+      self.pr2.join_all() # Doesn't work in sim for some reason..
+      #raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
     print("Trajectory execution complete!")
 
   def _get_grasping_trajectory(self, obj_to_grasp):

@@ -14,8 +14,8 @@ class TrajectoryGenerator(object):
     # self.viewer = trajoptpy.GetViewer(self.env)
     # trajoptpy.SetInteractive(True)
     self.lower,self.upper = self.robot.GetDOFLimits()
-    self.lower -= .3
-    self.upper += .3
+    self.lower -= .1
+    self.upper += .1
 
   def _generate_traj(self, goal_constraint, n_steps, collisionfree,
                      joint_targets):

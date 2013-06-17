@@ -10,7 +10,7 @@ class GraspPoseGenerator(object):
 
   def generate_poses(self, obj,
                      use_general_grasps=True,
-                     approach_dist=0.1):
+                     approach_dist=0.15):
     """
     Parameters:
     
