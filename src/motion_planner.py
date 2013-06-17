@@ -25,6 +25,7 @@ class MotionPlanner(object):
                        n_steps=None):
     raise NotImplementedError("generate_traj_with_joints() not implemented!")
 
+
 class TrajoptPlanner(MotionPlanner):
   def __init__(self, env, n_steps=30):
     super(TrajoptPlanner, self).__init__(env, n_steps)
