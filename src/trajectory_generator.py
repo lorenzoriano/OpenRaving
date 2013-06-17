@@ -72,8 +72,8 @@ class TrajectoryGenerator(object):
           "type" : "collision",
           "name" : "cont_col_free",
           "params" : {
-            "coeffs" : [40],
-            "dist_pen" : [0.04]
+            "coeffs" : [20],
+            "dist_pen" : [0.02]
           }
         })
       else:
