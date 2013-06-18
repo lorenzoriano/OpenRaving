@@ -6,7 +6,6 @@ class MotionPlanner(object):
   def __init__(self, env, n_steps=30):
     self.env = env
     self.robot = self.env.GetRobots()[0]
-    self.manip = self.robot.GetActiveManipulator()
     self.n_steps = n_steps
     self.lower,self.upper = self.robot.GetDOFLimits()
     self.lower -= .1
@@ -48,7 +47,7 @@ class TrajoptPlanner(MotionPlanner):
       request = {
         "basic_info" : {
           "n_steps" : self.n_steps if (n_steps is None) else n_steps,
-          "manip" : "rightarm", # see below for valid values
+          "manip" : self.robot.GetActiveManipulator().GetName(),
           "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
         },
         "costs" : [

@@ -11,7 +11,6 @@ class TrajectoryGenerator(object):
   def __init__(self, env):
     self.env = env
     self.robot = self.env.GetRobots()[0]
-    self.manip = self.robot.GetActiveManipulator()
     self.motion_planner = TrajoptPlanner(self.env)
     self.collision_checker = CollisionChecker(self.env)
 
@@ -43,28 +42,28 @@ class GraspTrajectoryGenerator(object):
   def __init__(self, env, unmovable_objects=set()):
     self.env = env
     self.robot = self.env.GetRobots()[0]
-    self.manip = self.robot.GetActiveManipulator()
     self.unmovable_objects = unmovable_objects
     self.traj_generator = TrajectoryGenerator(self.env)
 
   def generate_grasping_traj(self, obj, grasp_pose_list, collisionfree=True):
+    manip = self.robot.GetActiveManipulator()
     for grasp_pose, pre_grasp_pose in grasp_pose_list:
       # find IK for pregrasp
       if collisionfree:
-        init_joints1 = self.manip.FindIKSolution(pre_grasp_pose,
+        init_joints1 = manip.FindIKSolution(pre_grasp_pose,
           openravepy.IkFilterOptions.CheckEnvCollisions)
       else:
-        init_joints1 = self.manip.FindIKSolution(pre_grasp_pose,
+        init_joints1 = manip.FindIKSolution(pre_grasp_pose,
           openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
 
       with self.env:
         # find IK for grasp
         self.env.Remove(obj)
         if collisionfree:
-          init_joints2 = self.manip.FindIKSolution(grasp_pose,
+          init_joints2 = manip.FindIKSolution(grasp_pose,
             openravepy.IkFilterOptions.CheckEnvCollisions)
         else:
-          init_joints2 = self.manip.FindIKSolution(grasp_pose,
+          init_joints2 = manip.FindIKSolution(grasp_pose,
             openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
         self.env.AddKinBody(obj)
 
@@ -87,9 +86,9 @@ class GraspTrajectoryGenerator(object):
       with self.env:
         # find trajectory to grasp
         orig_values = self.robot.GetDOFValues(
-          self.robot.GetManipulator('rightarm').GetArmIndices())
+          manip.GetArmIndices())
         self.robot.SetDOFValues(traj1[-1],
-          self.robot.GetManipulator('rightarm').GetArmIndices())
+          manip.GetArmIndices())
 
         gripper_pose2 = openravepy.poseFromMatrix(grasp_pose).tolist()
         xyz_target2 = gripper_pose2[4:7]
@@ -105,7 +104,7 @@ class GraspTrajectoryGenerator(object):
 
         # reset
         self.robot.SetDOFValues(orig_values,
-          self.robot.GetManipulator('rightarm').GetArmIndices())
+          manip.GetArmIndices())
 
       if traj2 is None:
         continue

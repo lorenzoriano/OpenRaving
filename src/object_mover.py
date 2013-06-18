@@ -10,7 +10,6 @@ class ObjectMover(object):
   def __init__(self, env, use_ros, unmovable_objects=set()):
     self.env = env
     self.robot = self.env.GetRobots()[0]
-    self.manip = self.robot.GetActiveManipulator()
     self.traj_cache = {}
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
@@ -65,14 +64,14 @@ class ObjectMover(object):
     with self.env:
       # saving values
       orig_values = self.robot.GetDOFValues(
-        self.robot.GetManipulator('rightarm').GetArmIndices())
+        self.robot.GetActiveManipulator().GetArmIndices())
       self.robot.SetDOFValues(traj1[-1],
-        self.robot.GetManipulator('rightarm').GetArmIndices())
+        self.robot.GetActiveManipulator().GetArmIndices())
       pos2 = [0.0, -0.7, 1.0]
       traj2, _ = self.traj_generator.traj_from_pose(pos2, rot)
       # reset
       self.robot.SetDOFValues(orig_values,
-        self.robot.GetManipulator('rightarm').GetArmIndices())
+        self.robot.GetActiveManipulator().GetArmIndices())
 
     self._execute_traj(traj1.tolist() + traj2.tolist())
 
