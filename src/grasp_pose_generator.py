@@ -1,12 +1,16 @@
 import openravepy
 import numpy as np
-import utils
+import json
+
+GRASPS_FILE_NAME = 'generated_grasps.json'
 
 
 class GraspPoseGenerator(object):
   def __init__(self, env):
     self.env = env
     self.robot = self.env.GetRobots()[0]
+    with open(GRASPS_FILE_NAME, 'r') as grasps_file:
+      self.pregenerated_grasps = np.array(json.loads(grasps_file.read()))
 
   def generate_poses(self, obj,
                      use_general_grasps=True,
@@ -23,17 +27,32 @@ class GraspPoseGenerator(object):
       def __init__(self):
         self.normalanglerange = 0.0
         self.standoffs = [0]
-        self.rolls = np.arange(0.49*np.pi, 0.51*np.pi, 0.25*np.pi)
+        self.rolls = np.arange(0.5*np.pi, 2*np.pi, np.pi)
+        self.boxdelta = 0.01
         self.directiondelta = approach_dist
 
     gmodel = openravepy.databases.grasping.GraspingModel(self.robot, obj)
 
     if use_general_grasps:
-      gmodel.grasps = utils.side_cylinder_pre_grasps
+      gmodel.grasps = self.pregenerated_grasps
     else:
       if not gmodel.load():
         openravepy.raveLogInfo("Generating grasping model...")
         gmodel.autogenerate(_GraspOptions())
+
+        # only use horizontal grasps
+        horiz_grasp_filter = lambda g: \
+          abs(gmodel.getGlobalApproachDir(g)[2]) < 0.01
+        gmodel.grasps = filter(horiz_grasp_filter, gmodel.grasps)
+
+        # only use grasps in the upper half (+y is up)
+        upper_grasp_filter = lambda g: \
+          gmodel.GetLocalGraspTransform(g, collisionfree=True)[1][3] > 0
+        gmodel.grasps = filter(upper_grasp_filter, gmodel.grasps)
+
+        data = json.dumps([g.tolist() for g in gmodel.grasps])
+        with open(GRASPS_FILE_NAME, 'w') as outfile:
+          outfile.write(data)
 
     openravepy.raveLogInfo("Generating grasps")
     validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
