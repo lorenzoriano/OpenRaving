@@ -1,5 +1,42 @@
 import openravepy
 from motion_planner import TrajoptPlanner
+from collision_checker import CollisionChecker
+
+
+class TrajectoryGenerator(object):
+  """
+  Makes calls to the motion planner and checks the resulting
+  trajectory for collisions.
+  """
+  def __init__(self, env):
+    self.env = env
+    self.robot = self.env.GetRobots()[0]
+    self.manip = self.robot.GetActiveManipulator()
+    self.motion_planner = TrajoptPlanner(self.env)
+    self.collision_checker = CollisionChecker(self.env)
+
+  def traj_from_pose(self, pos, rot,
+                     collisionfree=True,
+                     joint_targets=None,
+                     n_steps=None):
+    traj = self.motion_planner.plan_with_pose(pos, rot, collisionfree,
+      joint_targets, n_steps)
+    collisions = self.collision_checker.get_collisions(traj)
+    if collisionfree and collisions:
+      return None, collisions
+    else:
+      return traj, collisions
+
+  def traj_from_joints(self, joint_targets,
+                       collisionfree=True,
+                       n_steps=None):
+    traj = self.motion_planner.plan_with_joints(joint_targets, collisionfree,
+      n_steps)
+    collisions = self.collision_checker.get_collisions(traj)
+    if collisionfree and collisions:
+      return None, collisions
+    else:
+      return traj, collisions
 
 
 class GraspTrajectoryGenerator(object):
@@ -8,8 +45,7 @@ class GraspTrajectoryGenerator(object):
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
     self.unmovable_objects = unmovable_objects
-    self.pregrasp_motion_planner = TrajoptPlanner(self.env)
-    self.grasp_motion_planner = TrajoptPlanner(self.env, 2)
+    self.traj_generator = TrajectoryGenerator(self.env)
 
   def generate_grasping_traj(self, obj, grasp_pose_list, collisionfree=True):
     for grasp_pose, pre_grasp_pose in grasp_pose_list:
@@ -42,7 +78,7 @@ class GraspTrajectoryGenerator(object):
       quat_target1 = openravepy.quatMultiply(gripper_pose1[:4],
                                             (0.7071, 0, -0.7071, 0)).tolist()
 
-      traj1, collisions1 = self.pregrasp_motion_planner.plan_with_pose(
+      traj1, collisions1 = self.traj_generator.traj_from_pose(
         xyz_target1, quat_target1,
         collisionfree=collisionfree, joint_targets=init_joints1.tolist())
       if traj1 is None:
@@ -62,8 +98,8 @@ class GraspTrajectoryGenerator(object):
                                               (0.7071, 0, -0.7071, 0)).tolist()
 
         self.env.Remove(obj)
-        traj2, collisions2 = self.grasp_motion_planner.plan_with_pose(
-          xyz_target2, quat_target2,
+        traj2, collisions2 = self.traj_generator.traj_from_pose(
+          xyz_target2, quat_target2, n_steps=2,
           collisionfree=collisionfree, joint_targets=init_joints2.tolist())
         self.env.AddKinBody(obj)
 

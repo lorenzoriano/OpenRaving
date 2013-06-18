@@ -1,6 +1,5 @@
 import json
 import trajoptpy
-from collision_checker import CollisionChecker
 
 
 class MotionPlanner(object):
@@ -9,7 +8,6 @@ class MotionPlanner(object):
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
     self.n_steps = n_steps
-    self.collision_checker = CollisionChecker(self.env)
     self.lower,self.upper = self.robot.GetDOFLimits()
     self.lower -= .1
     self.upper += .1
@@ -105,12 +103,7 @@ class TrajoptPlanner(MotionPlanner):
       prob = trajoptpy.ConstructProblem(json.dumps(request), self.env)
       result = trajoptpy.OptimizeProblem(prob)
       traj = result.GetTraj()
-
-      collisions = self.collision_checker.get_collisions(traj)
-      if collisionfree and collisions:
-        return None, collisions
-
-      return traj, collisions
+      return traj
 
   def plan_with_pose(self, pos, rot,
                      collisionfree=True,

@@ -2,8 +2,7 @@ import numpy as np
 import openravepy
 import utils
 from openrave_tests.PlannerPR2 import PlannerPR2
-from motion_planner import TrajoptPlanner
-from trajectory_generator import GraspTrajectoryGenerator
+from trajectory_generator import TrajectoryGenerator, GraspTrajectoryGenerator
 from grasp_pose_generator import GraspPoseGenerator
 
 
@@ -16,7 +15,7 @@ class ObjectMover(object):
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
     self.grasp_pose_generator = GraspPoseGenerator(self.env)
-    self.motion_planner = TrajoptPlanner(self.env)
+    self.traj_generator = TrajectoryGenerator(self.env)
     self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env,
       unmovable_objects)
     if self.use_ros:
@@ -31,7 +30,7 @@ class ObjectMover(object):
 
     # always start at same place
     joints = [-1.2, 0.2, -0.8, -1.8, -3.0, -0.3, 3.0]
-    traj, _ = self.motion_planner.plan_with_joints(joints)
+    traj, _ = self.traj_generator.traj_from_joints(joints)
     self._execute_traj(traj)
 
     # trajectory to grasp
@@ -51,7 +50,7 @@ class ObjectMover(object):
     # pose = openravepy.poseFromMatrix(mat).tolist()
     # pos = pose[4:7]
     # rot = pose[:4]
-    # traj, _ = self.motion_planner.plan(pos, rot, n_steps=2,
+    # traj, _ = self.traj_generator.plan(pos, rot, n_steps=2,
     #                                                   collisionfree=False)
     # self._execute_traj(traj)
 
@@ -61,8 +60,7 @@ class ObjectMover(object):
     rot_x = [0, 1, 0, 0]
     rot = openravepy.quatMult(rot_z, rot_x).tolist()
 
-    traj1, _ = self.motion_planner.plan_with_pose(pos1, rot,
-      collisionfree=False)
+    traj1, _ = self.traj_generator.traj_from_pose(pos1, rot)
 
     with self.env:
       # saving values
@@ -71,8 +69,7 @@ class ObjectMover(object):
       self.robot.SetDOFValues(traj1[-1],
         self.robot.GetManipulator('rightarm').GetArmIndices())
       pos2 = [0.0, -0.7, 1.0]
-      traj2, _ = self.motion_planner.plan_with_pose(pos2, rot,
-        collisionfree=False)
+      traj2, _ = self.traj_generator.traj_from_pose(pos2, rot)
       # reset
       self.robot.SetDOFValues(orig_values,
         self.robot.GetManipulator('rightarm').GetArmIndices())
