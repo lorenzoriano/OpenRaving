@@ -1,6 +1,7 @@
 import openravepy
 import numpy as np
 import json
+import utils
 
 GRASPS_FILE_NAME = 'generated_grasps.json'
 
@@ -9,8 +10,9 @@ class GraspPoseGenerator(object):
   def __init__(self, env):
     self.env = env
     self.robot = self.env.GetRobots()[0]
-    with open(GRASPS_FILE_NAME, 'r') as grasps_file:
-      self.pregenerated_grasps = np.array(json.loads(grasps_file.read()))
+    # with open(GRASPS_FILE_NAME, 'r') as grasps_file:
+    #   self.pregenerated_grasps = np.array(json.loads(grasps_file.read()))
+    self.pregenerated_grasps = utils.side_cylinder_pre_grasps
 
   def generate_poses(self, obj,
                      use_general_grasps=True,
