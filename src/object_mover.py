@@ -28,6 +28,10 @@ class ObjectMover(object):
     self.robot.SetActiveDOFs(np.r_[self.robot.GetManipulator("rightarm").GetArmIndices(),
                                    self.robot.GetManipulator("leftarm").GetArmIndices()])
 
+    # open grippers
+    self.robot.SetDOFValues([0.54, 0.54],
+      [self.robot.GetJointIndex('l_gripper_l_finger_joint'),
+       self.robot.GetJointIndex('r_gripper_l_finger_joint')])
     if self.use_ros:
       self.pr2.rgrip.open()
 

@@ -66,8 +66,6 @@ class GraspPoseGenerator(object):
 
     grasp_pose_list = []
     for grasp in validgrasps:
-      gmodel.setPreshape(grasp)
-
       grasp_pose = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
 
       pre_grasp_pose = gmodel.getGlobalGraspTransform(grasp, collisionfree=True)
