@@ -2,6 +2,7 @@ import numpy as np
 import openravepy
 import utils
 from openrave_tests.PlannerPR2 import PlannerPR2
+from openrave_tests.PR2 import mirror_arm_joints
 from trajectory_generator import TrajectoryGenerator, GraspTrajectoryGenerator
 from grasp_pose_generator import GraspPoseGenerator
 
@@ -24,12 +25,16 @@ class ObjectMover(object):
     self.traj_cache = {}
 
   def pickup(self, obj):
+    self.robot.SetActiveDOFs(np.r_[self.robot.GetManipulator("rightarm").GetArmIndices(),
+                                   self.robot.GetManipulator("leftarm").GetArmIndices()])
+
     if self.use_ros:
       self.pr2.rgrip.open()
 
     # always start at same place
-    joints = [-1.2, 0.2, -0.8, -1.8, -3.0, -0.3, 3.0]
-    traj, _ = self.traj_generator.traj_from_joints(joints)
+    right_joints = [-1.2, 0.2, -0.8, -1.8, -3.0, -0.3, 3.0]
+    left_joints = mirror_arm_joints(right_joints).tolist()
+    traj, _ = self.traj_generator.traj_from_joints(right_joints + left_joints)
     self._execute_traj(traj)
 
     # trajectory to grasp

@@ -47,32 +47,14 @@ class TrajoptPlanner(MotionPlanner):
       request = {
         "basic_info" : {
           "n_steps" : self.n_steps if (n_steps is None) else n_steps,
-          "manip" : self.robot.GetActiveManipulator().GetName(),
+          "manip" : "active",
           "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
         },
         "costs" : [
         {
           "type" : "joint_vel", # joint-space velocity cost
           "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
-        },
-        # {
-        #   "type" : "collision",
-        #   "name" : "col", # Shorten name so printed table will be prettier
-        #   "params" : {
-        #     "continuous":False,
-        #     "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-        #     "dist_pen" : [0.02] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-        #   }
-        # },
-        # {
-        #   "type" : "collision",
-        #   "name" : "cont_col", # Shorten name so printed table will be prettier
-        #   "params" : {
-        #     "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-        #     "dist_pen" : [0.00] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-        #   }
-        # }
-        ],
+        }],
         "constraints" : [
           goal_constraint
         ],
@@ -80,14 +62,23 @@ class TrajoptPlanner(MotionPlanner):
       }
 
       if collisionfree:
-        request['costs'].append({
+        request['costs'] += [{
           "type" : "collision",
           "name" : "cont_col_free",
           "params" : {
             "coeffs" : [20],
             "dist_pen" : [0.02]
           }
-        })
+        },
+        {
+          "type" : "collision",
+          "name" : "col",
+          "params" : {
+            "continuous" : False,
+            "coeffs" : [20],
+            "dist_pen" : [0.02]
+          }
+        }]
       else:
         # TODO: replace with better cost function
         request['costs'].append({

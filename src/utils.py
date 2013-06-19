@@ -496,6 +496,5 @@ def run_trajectory(robot, traj, animationtime=4.0, n=100):
   sleep_time = float(animationtime) / len(traj_up)
   for joint_values in traj_up:
     with robot.GetEnv():
-      robot.SetDOFValues(joint_values,
-        robot.GetManipulator('rightarm').GetArmIndices())
+      robot.SetDOFValues(joint_values, robot.GetActiveDOFIndices())
     time.sleep(sleep_time)
