@@ -50,6 +50,10 @@ class GraspTrajectoryGenerator(object):
     self.traj_generator = TrajectoryGenerator(self.env)
 
   def min_arm_col_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
+    """
+    Calls generate_grasping_trajs() with each arm and returns the trajectory
+    with the fewest collisions.
+    """
     trajs_r, col_r = self.generate_grasping_trajs(obj, grasp_pose_list,
       collisionfree=collisionfree, manip='rightarm')
     trajs_l, col_l = self.generate_grasping_trajs(obj, grasp_pose_list,

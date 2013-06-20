@@ -121,7 +121,7 @@ class ObjectMover(object):
     obj_to_grasp: Object for which to compute a grasping trajectory
     
     Returns:
-    An OpenRave trajectory object
+    A 14-DOF (rightarm + leftarm) trajectory represented as an array of arrays
     """
     obj_name = obj_to_grasp.GetName()
 
