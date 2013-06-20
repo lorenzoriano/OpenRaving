@@ -22,10 +22,9 @@ class TrajectoryGenerator(object):
                      manip='rightarm'):
     # find IK for initialization if possible
     if joint_targets is None:
-      self.robot.SetActiveManipulator(manip)
-      active_manip = self.robot.GetActiveManipulator()
+      manip_to_use = self.robot.GetManipulator(manip)
       tmat = openravepy.matrixFromPose(rot + pos)
-      joint_targets = active_manip.FindIKSolution(tmat,
+      joint_targets = manip_to_use.FindIKSolution(tmat,
           openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
       if joint_targets is not None:
         joint_targets = joint_targets.tolist()
@@ -146,26 +145,25 @@ class GraspTrajectoryGenerator(object):
     1: trajectory from initial position to pregrasp
     2: trajectory from pregrasp to grasp
     """
-    self.robot.SetActiveManipulator(manip)
-    active_manip = self.robot.GetActiveManipulator()
+    manip_to_use = self.robot.GetManipulator(manip)
 
     for grasp_pose, pre_grasp_pose in grasp_pose_list:
       # find IK for pregrasp
       if collisionfree:
-        init_joints1 = active_manip.FindIKSolution(pre_grasp_pose,
+        init_joints1 = manip_to_use.FindIKSolution(pre_grasp_pose,
           openravepy.IkFilterOptions.CheckEnvCollisions)
       else:
-        init_joints1 = active_manip.FindIKSolution(pre_grasp_pose,
+        init_joints1 = manip_to_use.FindIKSolution(pre_grasp_pose,
           openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
 
       with self.env:
         # find IK for grasp
         self.env.Remove(obj)
         if collisionfree:
-          init_joints2 = active_manip.FindIKSolution(grasp_pose,
+          init_joints2 = manip_to_use.FindIKSolution(grasp_pose,
             openravepy.IkFilterOptions.CheckEnvCollisions)
         else:
-          init_joints2 = active_manip.FindIKSolution(grasp_pose,
+          init_joints2 = manip_to_use.FindIKSolution(grasp_pose,
             openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
         self.env.AddKinBody(obj)
 
