@@ -2,7 +2,7 @@ import numpy as np
 import openravepy
 import utils
 from openrave_tests.PlannerPR2 import PlannerPR2
-from openrave_tests.PR2 import mirror_arm_joints
+from openrave_tests.PR2 import mirror_arm_joints, Arm
 from trajectory_generator import TrajectoryGenerator, GraspTrajectoryGenerator
 from grasp_pose_generator import GraspPoseGenerator
 
@@ -37,8 +37,8 @@ class ObjectMover(object):
       self.pr2.lgrip.open()
 
     # always start at same place
-    right_joints = [-1.2, 0.2, -0.8, -1.8, -3.0, -0.3, 3.0]
-    left_joints = mirror_arm_joints(right_joints).tolist()
+    left_joints = Arm.L_POSTURES['side']
+    right_joints = mirror_arm_joints(left_joints).tolist()
     traj, _ = self.traj_generator.traj_from_joints(right_joints + left_joints)
     self._execute_traj(traj)
 
