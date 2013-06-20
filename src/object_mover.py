@@ -133,8 +133,8 @@ class ObjectMover(object):
     grasp_pose_list = self.grasp_pose_generator.generate_poses(obj_to_grasp)
 
     print "Trying to find a collision-free trajectory..."
-    trajs, _ = self.grasp_trajectory_generator.generate_grasping_trajs(
-      obj_to_grasp, grasp_pose_list, manip='rightarm')
+    trajs, _ = self.grasp_trajectory_generator.min_arm_col_grasping_trajs(
+      obj_to_grasp, grasp_pose_list)
 
     if trajs is not None:
       print "Found a collision-free trajectory!!"
@@ -142,8 +142,8 @@ class ObjectMover(object):
     print "No collision-free trajectory found!"
 
     print "Trying to find any trajectory..."
-    trajs, collisions = self.grasp_trajectory_generator.generate_grasping_trajs(
-      obj_to_grasp, grasp_pose_list, manip='rightarm', collisionfree=False)
+    trajs, collisions = self.grasp_trajectory_generator.min_arm_col_grasping_trajs(
+      obj_to_grasp, grasp_pose_list, collisionfree=False)
 
     if trajs is not None:
       print "Trajectory found with collisions: {}".format(collisions)

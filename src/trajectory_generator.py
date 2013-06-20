@@ -49,6 +49,28 @@ class GraspTrajectoryGenerator(object):
     self.unmovable_objects = unmovable_objects
     self.traj_generator = TrajectoryGenerator(self.env)
 
+  def min_arm_col_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
+    trajs_r, col_r = self.generate_grasping_trajs(obj, grasp_pose_list,
+      collisionfree=collisionfree, manip='rightarm')
+    trajs_l, col_l = self.generate_grasping_trajs(obj, grasp_pose_list,
+      collisionfree=collisionfree, manip='leftarm')
+
+    if (trajs_r is not None) and (trajs_l is None):
+      self.robot.SetActiveManipulator('rightarm')
+      return trajs_r, col_r
+    elif (trajs_r is None) and (trajs_l is not None):
+      self.robot.SetActiveManipulator('leftarm')
+      return trajs_l, col_l
+    elif (trajs_r is not None) and (trajs_l is not None):
+      if len(col_r) <= len(col_l):
+        self.robot.SetActiveManipulator('rightarm')
+        return trajs_r, col_r
+      else:
+        self.robot.SetActiveManipulator('leftarm')
+        return trajs_l, col_l
+    else:
+      return None, set()
+
   def generate_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True,
     manip='rightarm'):
     """
