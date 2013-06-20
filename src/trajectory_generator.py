@@ -49,31 +49,34 @@ class GraspTrajectoryGenerator(object):
     self.unmovable_objects = unmovable_objects
     self.traj_generator = TrajectoryGenerator(self.env)
 
-  def generate_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
+  def generate_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True,
+    manip='rightarm'):
     """
     Returns a list of trajectories, one for each step of the grasp.
     Currently, there are two trajectories:
     1: trajectory from initial position to pregrasp
     2: trajectory from pregrasp to grasp
     """
-    manip = self.robot.GetActiveManipulator()
+    self.robot.SetActiveManipulator(manip)
+    active_manip = self.robot.GetActiveManipulator()
+
     for grasp_pose, pre_grasp_pose in grasp_pose_list:
       # find IK for pregrasp
       if collisionfree:
-        init_joints1 = manip.FindIKSolution(pre_grasp_pose,
+        init_joints1 = active_manip.FindIKSolution(pre_grasp_pose,
           openravepy.IkFilterOptions.CheckEnvCollisions)
       else:
-        init_joints1 = manip.FindIKSolution(pre_grasp_pose,
+        init_joints1 = active_manip.FindIKSolution(pre_grasp_pose,
           openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
 
       with self.env:
         # find IK for grasp
         self.env.Remove(obj)
         if collisionfree:
-          init_joints2 = manip.FindIKSolution(grasp_pose,
+          init_joints2 = active_manip.FindIKSolution(grasp_pose,
             openravepy.IkFilterOptions.CheckEnvCollisions)
         else:
-          init_joints2 = manip.FindIKSolution(grasp_pose,
+          init_joints2 = active_manip.FindIKSolution(grasp_pose,
             openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
         self.env.AddKinBody(obj)
 
@@ -89,16 +92,15 @@ class GraspTrajectoryGenerator(object):
 
       traj1, collisions1 = self.traj_generator.traj_from_pose(
         xyz_target1, quat_target1,
-        collisionfree=collisionfree, joint_targets=init_joints1.tolist())
+        collisionfree=collisionfree, joint_targets=init_joints1.tolist(),
+        manip=manip)
       if traj1 is None:
         continue
 
       with self.env:
         # find trajectory to grasp
-        orig_values = self.robot.GetDOFValues(
-          manip.GetArmIndices())
-        self.robot.SetDOFValues(traj1[-1],
-          manip.GetArmIndices())
+        orig_values = self.robot.GetDOFValues(self.robot.GetActiveDOFIndices())
+        self.robot.SetDOFValues(traj1[-1], self.robot.GetActiveDOFIndices())
 
         gripper_pose2 = openravepy.poseFromMatrix(grasp_pose).tolist()
         xyz_target2 = gripper_pose2[4:7]
@@ -109,12 +111,12 @@ class GraspTrajectoryGenerator(object):
         self.env.Remove(obj)
         traj2, collisions2 = self.traj_generator.traj_from_pose(
           xyz_target2, quat_target2, n_steps=2,
-          collisionfree=collisionfree, joint_targets=init_joints2.tolist())
+          collisionfree=collisionfree, joint_targets=init_joints2.tolist(),
+          manip=manip)
         self.env.AddKinBody(obj)
 
         # reset
-        self.robot.SetDOFValues(orig_values,
-          manip.GetArmIndices())
+        self.robot.SetDOFValues(orig_values, self.robot.GetActiveDOFIndices())
 
       if traj2 is None:
         continue
