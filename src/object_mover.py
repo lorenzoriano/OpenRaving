@@ -43,15 +43,19 @@ class ObjectMover(object):
     self._execute_traj(traj)
 
     # trajectory to grasp
-    trajs = self._test_and_get_grasping_trajs(obj)
+    trajs, manip = self._test_and_get_grasping_trajs(obj)
     for traj in trajs:
       self._execute_traj(traj)
 
     # close gripper
+    self.robot.SetActiveManipulator(manip)
     self.robot.Grab(obj)
     utils.exclude_robot_grabbed_collisions(self.robot, obj)
     if self.use_ros:
-      self.pr2.rgrip.close()
+      if manip == 'rightarm':
+        self.pr2.rgrip.close()
+      elif manip == 'leftarm':
+        self.pr2.lgrip.close()
 
     # lift object
     # link = self.robot.GetLink('r_gripper_tool_frame')
@@ -65,12 +69,17 @@ class ObjectMover(object):
     # self._execute_traj(traj)
 
   def drop(self, obj, table):
+    manip = self.robot.GetActiveManipulator().GetName()
+
     pos1 = [0.0, -0.7, 1.0]
     rot_z = [0.7071, 0, 0, -0.7071]
     rot_x = [0, 1, 0, 0]
+    if manip == 'leftarm':
+      pos1[1] *= -1
+      rot_z[3] *= -1
     rot = openravepy.quatMult(rot_z, rot_x).tolist()
 
-    traj1, _ = self.traj_generator.traj_from_pose(pos1, rot)
+    traj1, _ = self.traj_generator.traj_from_pose(pos1, rot, manip=manip)
     self._execute_traj(traj1.tolist())
 
     # with self.env:
@@ -90,7 +99,10 @@ class ObjectMover(object):
     # open gripper
     self.robot.Release(obj)
     if self.use_ros:
-      self.pr2.rgrip.open()
+      if manip == 'rightarm':
+        self.pr2.rgrip.open()
+      elif manip == 'leftarm':
+        self.pr2.lgrip.open()
 
     # transforming the object
     T = obj.GetTransform()
@@ -125,29 +137,29 @@ class ObjectMover(object):
     """
     obj_name = obj_to_grasp.GetName()
 
-    trajs = self.traj_cache.get(obj_name, None)
+    trajs, manip = self.traj_cache.get(obj_name, (None, None))
     if trajs is not None:
       print "Using existing traj in cache!"
-      return trajs
+      return trajs, manip
 
     grasp_pose_list = self.grasp_pose_generator.generate_poses(obj_to_grasp)
 
     print "Trying to find a collision-free trajectory..."
-    trajs, _ = self.grasp_trajectory_generator.min_arm_col_grasping_trajs(
+    trajs, _, manip = self.grasp_trajectory_generator.min_arm_col_grasping_trajs(
       obj_to_grasp, grasp_pose_list)
 
     if trajs is not None:
       print "Found a collision-free trajectory!!"
-      return trajs
+      return trajs, manip
     print "No collision-free trajectory found!"
 
     print "Trying to find any trajectory..."
-    trajs, collisions = self.grasp_trajectory_generator.min_arm_col_grasping_trajs(
+    trajs, collisions, manip = self.grasp_trajectory_generator.min_arm_col_grasping_trajs(
       obj_to_grasp, grasp_pose_list, collisionfree=False)
 
     if trajs is not None:
       print "Trajectory found with collisions: {}".format(collisions)
-      self.traj_cache[obj_name] = trajs
+      self.traj_cache[obj_name] = (trajs, manip)
       e = ObjectMoveError()
       e.collision_list = [obj.GetName() for obj in collisions]
       raise e

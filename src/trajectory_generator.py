@@ -53,29 +53,42 @@ class GraspTrajectoryGenerator(object):
     """
     Calls generate_grasping_trajs() with each arm and returns the trajectory
     with the fewest collisions.
+
+    Returns the tuple: (trajectories, collisions, manip)
+    trajectories: list of trajectories returned by _generate_grasping_trajs()
+    collisions: set of collisions returned by _generate_grasping_trajs()
+    manip: the manipulator ('rightarm' or 'leftarm') chosen
     """
-    trajs_r, col_r = self.generate_grasping_trajs(obj, grasp_pose_list,
-      collisionfree=collisionfree, manip='rightarm')
-    trajs_l, col_l = self.generate_grasping_trajs(obj, grasp_pose_list,
-      collisionfree=collisionfree, manip='leftarm')
+    trajs_r, col_r, manip_r = self.right_arm_grasping_trajs(obj, grasp_pose_list,
+      collisionfree=collisionfree)
+    trajs_l, col_l, manip_l = self.left_arm_grasping_trajs(obj, grasp_pose_list,
+      collisionfree=collisionfree)
 
     if (trajs_r is not None) and (trajs_l is None):
-      self.robot.SetActiveManipulator('rightarm')
-      return trajs_r, col_r
+      return trajs_r, col_r, manip_r
     elif (trajs_r is None) and (trajs_l is not None):
-      self.robot.SetActiveManipulator('leftarm')
-      return trajs_l, col_l
+      return trajs_l, col_l, manip_l
     elif (trajs_r is not None) and (trajs_l is not None):
       if len(col_r) <= len(col_l):
-        self.robot.SetActiveManipulator('rightarm')
-        return trajs_r, col_r
+        return trajs_r, col_r, manip_r
       else:
-        self.robot.SetActiveManipulator('leftarm')
-        return trajs_l, col_l
+        return trajs_l, col_l, manip_l
     else:
-      return None, set()
+      return None, set(), None
 
-  def generate_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True,
+  def right_arm_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
+    manip = 'rightarm'
+    trajs, col = self._generate_grasping_trajs(obj, grasp_pose_list,
+      collisionfree=collisionfree, manip=manip)
+    return trajs, col, manip
+
+  def left_arm_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
+    manip = 'leftarm'
+    trajs, col = self._generate_grasping_trajs(obj, grasp_pose_list,
+      collisionfree=collisionfree, manip=manip)
+    return trajs, col, manip
+
+  def _generate_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True,
     manip='rightarm'):
     """
     Returns a list of trajectories, one for each step of the grasp.
