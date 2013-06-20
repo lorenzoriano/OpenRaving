@@ -117,10 +117,15 @@ class ObjectMover(object):
     print("Executing trajectory...")
     utils.run_trajectory(self.robot, traj)
     if self.use_ros:
+      traj_r = []
+      traj_l = []
+      for joints in traj:
+        traj_r.append(joints[:7])
+        traj_l.append(joints[7:])
       raw_input("Press enter to run trajectory on PR2")
-      self.pr2.rarm.follow_joint_trajectory(traj)
-      self.pr2.join_all() # Doesn't work in sim for some reason..
-      #raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
+      self.pr2.rarm.follow_joint_trajectory(traj_r)
+      self.pr2.larm.follow_joint_trajectory(traj_l)
+      self.pr2.join_all()
     print("Trajectory execution complete!")
 
   def _test_and_get_grasping_trajs(self, obj_to_grasp):
