@@ -98,13 +98,17 @@ class TrajoptPlanner(MotionPlanner):
   def plan_with_pose(self, pos, rot,
                      collisionfree=True,
                      joint_targets=None,
-                     n_steps=None):
-
+                     n_steps=None,
+                     manip='rightarm'):
+    if manip == 'rightarm':
+      link = 'r_gripper_tool_frame'
+    elif manip == 'leftarm':
+      link = 'l_gripper_tool_frame'
     goal_constraint = {
       "type" : "pose",
       "params" : {"xyz" : pos,
                   "wxyz" : rot,
-                  "link": "r_gripper_tool_frame",
+                  "link": link,
                   "pos_coeffs" : [20, 20, 20],
                   "rot_coeffs" : [20, 20, 20]}
     }

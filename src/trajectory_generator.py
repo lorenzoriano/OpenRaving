@@ -1,6 +1,7 @@
 import openravepy
 from motion_planner import TrajoptPlanner
 from collision_checker import CollisionChecker
+import utils
 
 
 class TrajectoryGenerator(object):
@@ -17,9 +18,12 @@ class TrajectoryGenerator(object):
   def traj_from_pose(self, pos, rot,
                      collisionfree=True,
                      joint_targets=None,
-                     n_steps=None):
+                     n_steps=None,
+                     manip='rightarm'):
+    if joint_targets is not None:
+      joint_targets = utils.extend_joints(self.robot, joint_targets, manip)
     traj = self.motion_planner.plan_with_pose(pos, rot, collisionfree,
-      joint_targets, n_steps)
+      joint_targets, n_steps, manip)
     collisions = self.collision_checker.get_collisions(traj)
     if collisionfree and collisions:
       return None, collisions

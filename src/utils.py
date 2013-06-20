@@ -487,7 +487,7 @@ def exclude_robot_grabbed_collisions(robot, grabbed):
       cc.ExcludeCollisionPair(robotlink, grabbedlink)
       cc.ExcludeCollisionPair(grabbedlink, grabbedlink)
 
-def run_trajectory(robot, traj, animationtime=4.0, n=100):
+def run_trajectory(robot, traj, animationtime=1.0, n=100):
   """
   Crude way of executing trajectories and update the OpenRave environment
   without having to enable OpenRave simulation.
@@ -498,3 +498,24 @@ def run_trajectory(robot, traj, animationtime=4.0, n=100):
     with robot.GetEnv():
       robot.SetDOFValues(joint_values, robot.GetActiveDOFIndices())
     time.sleep(sleep_time)
+
+def extend_joints(robot, joints, manip):
+  """
+  Extends a 7 DOF joint representation to a 14 DOF joint representation
+  """
+  if len(joints) == 7:
+    if manip == 'rightarm':
+      joints = joints + robot.GetDOFValues(robot.GetManipulator("leftarm").GetArmIndices()).tolist()
+    elif manip == 'leftarm':
+      joints = robot.GetDOFValues(robot.GetManipulator("rightarm").GetArmIndices()).tolist() + joints
+  return joints
+
+def extend_traj(robot, traj, manip):
+  """
+  Extends a 7 DOF traj into a 14 DOF traj
+  """
+  extended_traj = []
+  for joints in traj:
+    joints = extend_joints(robot, joints, manip)
+    extended_traj.append(joints)
+  return extended_traj
