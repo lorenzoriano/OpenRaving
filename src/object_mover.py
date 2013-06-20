@@ -72,7 +72,8 @@ class ObjectMover(object):
     manip = self.robot.GetActiveManipulator().GetName()
 
     pos1 = [0.0, -0.7, 1.0]
-    rot = [0.7071, 0, 0.7071, 0]
+    rot_y = [0.7071, 0, 0.7071, 0]
+    rot = openravepy.quatMultiply(rot_y, (0, 0, 0, 1)).tolist()
     if manip == 'leftarm':
       pos1[1] *= -1
 
