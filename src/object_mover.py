@@ -114,7 +114,6 @@ class ObjectMover(object):
     obj.SetTransform(T)
 
   def _execute_traj(self, traj):
-    traj_obj = utils.array_to_traj(self.robot, traj)
     print("Executing trajectory...")
     utils.run_trajectory(self.robot, traj)
     if self.use_ros:
@@ -140,7 +139,11 @@ class ObjectMover(object):
     trajs, manip = self.traj_cache.get(obj_name, (None, None))
     if trajs is not None:
       print "Using existing traj in cache!"
-      return trajs, manip
+      opt_trajs, cols, manip = self.grasp_trajectory_generator.optimize_grasping_trajs(trajs, manip, obj_to_grasp)
+      if not cols:
+        return opt_trajs, manip
+      else:
+        del self.traj_cache[obj_name]
 
     grasp_pose_list = self.grasp_pose_generator.generate_poses(obj_to_grasp)
 

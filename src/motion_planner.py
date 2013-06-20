@@ -1,5 +1,6 @@
 import json
 import trajoptpy
+import openravepy
 
 
 class MotionPlanner(object):
@@ -22,6 +23,9 @@ class MotionPlanner(object):
                        n_steps=None):
     raise NotImplementedError("generate_traj_with_joints() not implemented!")
 
+  def optimize_traj(self, traj, manip):
+    raise NotImplementedError("optimize_traj() not implemented!")
+
 
 class TrajoptPlanner(MotionPlanner):
   def __init__(self, env, n_steps=30):
@@ -30,7 +34,7 @@ class TrajoptPlanner(MotionPlanner):
     # trajoptpy.SetInteractive(True)
 
   def _generate_traj(self, goal_constraint, n_steps, collisionfree,
-                     joint_targets):
+                     joint_targets, init_data):
     with self.env:
       self.robot.SetDOFLimits(self.lower, self.upper)
 
@@ -90,6 +94,9 @@ class TrajoptPlanner(MotionPlanner):
           }
         })
 
+      if init_data is not None:
+        request['init_info']['data'] = init_data
+
       prob = trajoptpy.ConstructProblem(json.dumps(request), self.env)
       result = trajoptpy.OptimizeProblem(prob)
       traj = result.GetTraj()
@@ -99,6 +106,7 @@ class TrajoptPlanner(MotionPlanner):
                      collisionfree=True,
                      joint_targets=None,
                      n_steps=None,
+                     init_data=None,
                      manip='rightarm'):
     if manip == 'rightarm':
       link = 'r_gripper_tool_frame'
@@ -113,14 +121,39 @@ class TrajoptPlanner(MotionPlanner):
                   "rot_coeffs" : [20, 20, 20]}
     }
     return self._generate_traj(goal_constraint, n_steps, collisionfree,
-                               joint_targets)
+                               joint_targets, init_data)
 
   def plan_with_joints(self, joint_targets,
                        collisionfree=True,
-                       n_steps=None):
+                       n_steps=None,
+                       init_data=None):
     goal_constraint = {
       "type" : "joint",
       "params" : {"vals" : joint_targets}
     }
     return self._generate_traj(goal_constraint, n_steps, collisionfree,
-                               joint_targets)
+                               joint_targets, init_data)
+
+  def optimize_traj(self, init_traj, manip, collisionfree=True):
+    """
+    Takes a given trajectory and optimizes it, keeping the end gripper pose
+    the same for the chosen manipulator.
+    """
+    if manip == 'rightarm':
+      link = 'r_gripper_tool_frame'
+    elif manip == 'leftarm':
+      link = 'l_gripper_tool_frame'
+
+    with self.env:
+      orig_values = self.robot.GetDOFValues(self.robot.GetActiveDOFIndices())
+      self.robot.SetDOFValues(init_traj[-1], self.robot.GetActiveDOFIndices())
+      mat = self.robot.GetLink(link).GetTransform()
+      pose = openravepy.poseFromMatrix(mat).tolist()
+      # reset
+      self.robot.SetDOFValues(orig_values, self.robot.GetActiveDOFIndices())
+
+    pos = pose[4:]
+    rot = pose[:4]
+    return self.plan_with_pose(pos, rot, collisionfree=collisionfree,
+      joint_targets=init_traj[-1], init_data=init_traj, manip=manip,
+      n_steps=len(init_traj))

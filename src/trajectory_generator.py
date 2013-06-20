@@ -23,7 +23,7 @@ class TrajectoryGenerator(object):
     if joint_targets is not None:
       joint_targets = utils.extend_joints_dofs(self.robot, joint_targets, manip)
     traj = self.motion_planner.plan_with_pose(pos, rot, collisionfree,
-      joint_targets, n_steps, manip)
+      joint_targets, n_steps, manip=manip)
     collisions = self.collision_checker.get_collisions(traj)
     if collisionfree and collisions:
       return None, collisions
@@ -41,6 +41,25 @@ class TrajectoryGenerator(object):
     else:
       return traj, collisions
 
+  def optimize_traj(self, init_traj, collisionfree=True, manip='rightarm'):
+    """
+    Takes a given trajectory and optimizes it, keeping the end gripper pose
+    the same for the chosen manipulator.
+
+    If the motion planner does not support optimizing trajectories, just
+    returns the original trajectory.
+    """
+    try:
+      traj = self.motion_planner.optimize_traj(init_traj, manip,
+        collisionfree=collisionfree)
+    except NotImplementedError:
+      print "Motion planner does not support optimizng trajectories!"
+    collisions = self.collision_checker.get_collisions(traj)
+    if collisionfree and collisions:
+      return None, collisions
+    else:
+      return traj, collisions
+
 
 class GraspTrajectoryGenerator(object):
   def __init__(self, env, unmovable_objects=set()):
@@ -48,6 +67,23 @@ class GraspTrajectoryGenerator(object):
     self.robot = self.env.GetRobots()[0]
     self.unmovable_objects = unmovable_objects
     self.traj_generator = TrajectoryGenerator(self.env)
+
+  def optimize_grasping_trajs(self, init_trajs, manip, obj_to_grasp, collisionfree=True):
+      with self.env:
+        orig_values = self.robot.GetDOFValues(self.robot.GetActiveDOFIndices())
+
+        opt_traj1, col1 = self.traj_generator.optimize_traj(init_trajs[0],
+          collisionfree=collisionfree, manip=manip)
+        self.robot.SetDOFValues(opt_traj1[-1], self.robot.GetActiveDOFIndices())
+        self.env.Remove(obj_to_grasp)
+        opt_traj2, col2 = self.traj_generator.optimize_traj(init_trajs[1],
+          collisionfree=collisionfree, manip=manip)
+        self.env.AddKinBody(obj_to_grasp)
+
+        # reset
+        self.robot.SetDOFValues(orig_values, self.robot.GetActiveDOFIndices())
+
+      return [opt_traj1.tolist(), opt_traj2.tolist()], col1.union(col2), manip
 
   def min_arm_col_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
     """
