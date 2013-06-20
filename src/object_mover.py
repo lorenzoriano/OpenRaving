@@ -63,26 +63,27 @@ class ObjectMover(object):
     # self._execute_traj(traj)
 
   def drop(self, obj, table):
-    pos1 = [0.4, -0.7, 1.1]
+    pos1 = [0.0, -0.7, 1.0]
     rot_z = [0.7071, 0, 0, -0.7071]
     rot_x = [0, 1, 0, 0]
     rot = openravepy.quatMult(rot_z, rot_x).tolist()
 
     traj1, _ = self.traj_generator.traj_from_pose(pos1, rot)
+    self._execute_traj(traj1.tolist())
 
-    with self.env:
-      # saving values
-      orig_values = self.robot.GetDOFValues(
-        self.robot.GetActiveManipulator().GetArmIndices())
-      self.robot.SetDOFValues(traj1[-1],
-        self.robot.GetActiveManipulator().GetArmIndices())
-      pos2 = [0.0, -0.7, 1.0]
-      traj2, _ = self.traj_generator.traj_from_pose(pos2, rot)
-      # reset
-      self.robot.SetDOFValues(orig_values,
-        self.robot.GetActiveManipulator().GetArmIndices())
+    # with self.env:
+    #   # saving values
+    #   orig_values = self.robot.GetDOFValues(
+    #     self.robot.GetActiveManipulator().GetArmIndices())
+    #   self.robot.SetDOFValues(traj1[-1],
+    #     self.robot.GetActiveManipulator().GetArmIndices())
+    #   pos2 = [0.0, -0.7, 1.0]
+    #   traj2, _ = self.traj_generator.traj_from_pose(pos2, rot)
+    #   # reset
+    #   self.robot.SetDOFValues(orig_values,
+    #     self.robot.GetActiveManipulator().GetArmIndices())
 
-    self._execute_traj(traj1.tolist() + traj2.tolist())
+    # self._execute_traj(traj1.tolist() + traj2.tolist())
 
     # open gripper
     self.robot.Release(obj)
