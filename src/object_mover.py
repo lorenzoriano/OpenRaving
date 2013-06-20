@@ -42,7 +42,7 @@ class ObjectMover(object):
     self._execute_traj(traj)
 
     # trajectory to grasp
-    trajs = self._get_grasping_trajectories(obj)
+    trajs = self._test_and_get_grasping_trajs(obj)
     for traj in trajs:
       self._execute_traj(traj)
 
@@ -111,7 +111,7 @@ class ObjectMover(object):
       #raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
     print("Trajectory execution complete!")
 
-  def _get_grasping_trajectories(self, obj_to_grasp):
+  def _test_and_get_grasping_trajs(self, obj_to_grasp):
     """
     Finds a valid grasping trajectory or raises an ObjectMoveError
     if a valid trajectory cannot be found
@@ -128,7 +128,6 @@ class ObjectMover(object):
     if trajs is not None:
       print "Using existing traj in cache!"
       return trajs
-
 
     grasp_pose_list = self.grasp_pose_generator.generate_poses(obj_to_grasp)
 

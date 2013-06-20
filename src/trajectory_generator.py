@@ -21,7 +21,7 @@ class TrajectoryGenerator(object):
                      n_steps=None,
                      manip='rightarm'):
     if joint_targets is not None:
-      joint_targets = utils.extend_joints(self.robot, joint_targets, manip)
+      joint_targets = utils.extend_joints_dofs(self.robot, joint_targets, manip)
     traj = self.motion_planner.plan_with_pose(pos, rot, collisionfree,
       joint_targets, n_steps, manip)
     collisions = self.collision_checker.get_collisions(traj)

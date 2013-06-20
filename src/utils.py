@@ -499,7 +499,7 @@ def run_trajectory(robot, traj, animationtime=4.0, n=100):
       robot.SetDOFValues(joint_values, robot.GetActiveDOFIndices())
     time.sleep(sleep_time)
 
-def extend_joints(robot, joints, manip):
+def extend_joints_dofs(robot, joints, manip):
   """
   Extends a 7 DOF joint representation to a 14 DOF joint representation
   """
@@ -510,7 +510,7 @@ def extend_joints(robot, joints, manip):
       joints = robot.GetDOFValues(robot.GetManipulator("rightarm").GetArmIndices()).tolist() + joints
   return joints
 
-def extend_traj(robot, traj, manip):
+def extend_traj_dofs(robot, traj, manip):
   """
   Extends a 7 DOF traj into a 14 DOF traj
   """
