@@ -72,12 +72,9 @@ class ObjectMover(object):
     manip = self.robot.GetActiveManipulator().GetName()
 
     pos1 = [0.0, -0.7, 1.0]
-    rot_z = [0.7071, 0, 0, -0.7071]
-    rot_x = [0, 1, 0, 0]
+    rot = [0.7071, 0, 0.7071, 0]
     if manip == 'leftarm':
       pos1[1] *= -1
-      rot_z[3] *= -1
-    rot = openravepy.quatMult(rot_z, rot_x).tolist()
 
     traj1, _ = self.traj_generator.traj_from_pose(pos1, rot, manip=manip)
     self._execute_traj(traj1.tolist())

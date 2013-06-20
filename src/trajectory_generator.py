@@ -20,8 +20,22 @@ class TrajectoryGenerator(object):
                      joint_targets=None,
                      n_steps=None,
                      manip='rightarm'):
+    # find IK for initialization if possible
+    if joint_targets is None:
+      self.robot.SetActiveManipulator(manip)
+      active_manip = self.robot.GetActiveManipulator()
+      tmat = openravepy.matrixFromPose(rot + pos)
+      joint_targets = active_manip.FindIKSolution(tmat,
+          openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
+      if joint_targets is not None:
+        joint_targets = joint_targets.tolist()
+
     if joint_targets is not None:
       joint_targets = utils.extend_joints_dofs(self.robot, joint_targets, manip)
+
+    # quaternions are rotated by pi/2 around y for some reason...
+    rot = openravepy.quatMultiply(rot, (0.7071, 0, -0.7071, 0)).tolist()
+
     traj = self.motion_planner.plan_with_pose(pos, rot, collisionfree,
       joint_targets, n_steps, manip=manip)
     collisions = self.collision_checker.get_collisions(traj)
@@ -160,10 +174,8 @@ class GraspTrajectoryGenerator(object):
 
       # find traj for pregrasp
       gripper_pose1 = openravepy.poseFromMatrix(pre_grasp_pose).tolist()
-      xyz_target1 = gripper_pose1[4:7]
-      # quaternions are rotated by pi/2 around y for some reason...
-      quat_target1 = openravepy.quatMultiply(gripper_pose1[:4],
-                                            (0.7071, 0, -0.7071, 0)).tolist()
+      xyz_target1 = gripper_pose1[4:]
+      quat_target1 = gripper_pose1[:4]
 
       traj1, collisions1 = self.traj_generator.traj_from_pose(
         xyz_target1, quat_target1,
@@ -178,10 +190,8 @@ class GraspTrajectoryGenerator(object):
         self.robot.SetDOFValues(traj1[-1], self.robot.GetActiveDOFIndices())
 
         gripper_pose2 = openravepy.poseFromMatrix(grasp_pose).tolist()
-        xyz_target2 = gripper_pose2[4:7]
-        # quaternions are rotated by pi/2 around y for some reason...
-        quat_target2 = openravepy.quatMultiply(gripper_pose2[:4],
-                                              (0.7071, 0, -0.7071, 0)).tolist()
+        xyz_target2 = gripper_pose2[4:]
+        quat_target2 = gripper_pose2[:4]
 
         self.env.Remove(obj)
         traj2, collisions2 = self.traj_generator.traj_from_pose(
