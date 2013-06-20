@@ -34,6 +34,7 @@ class ObjectMover(object):
        self.robot.GetJointIndex('r_gripper_l_finger_joint')])
     if self.use_ros:
       self.pr2.rgrip.open()
+      self.pr2.lgrip.open()
 
     # always start at same place
     right_joints = [-1.2, 0.2, -0.8, -1.8, -3.0, -0.3, 3.0]
