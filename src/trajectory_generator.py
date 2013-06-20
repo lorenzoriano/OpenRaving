@@ -49,7 +49,13 @@ class GraspTrajectoryGenerator(object):
     self.unmovable_objects = unmovable_objects
     self.traj_generator = TrajectoryGenerator(self.env)
 
-  def generate_grasping_traj(self, obj, grasp_pose_list, collisionfree=True):
+  def generate_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
+    """
+    Returns a list of trajectories, one for each step of the grasp.
+    Currently, there are two trajectories:
+    1: trajectory from initial position to pregrasp
+    2: trajectory from pregrasp to grasp
+    """
     manip = self.robot.GetActiveManipulator()
     for grasp_pose, pre_grasp_pose in grasp_pose_list:
       # find IK for pregrasp
@@ -119,6 +125,6 @@ class GraspTrajectoryGenerator(object):
       if self.unmovable_objects.intersection(collisions):
         continue
 
-      return traj1.tolist() + traj2.tolist(), collisions
+      return [traj1.tolist(), traj2.tolist()], collisions
 
     return None, set()

@@ -487,7 +487,7 @@ def exclude_robot_grabbed_collisions(robot, grabbed):
       cc.ExcludeCollisionPair(robotlink, grabbedlink)
       cc.ExcludeCollisionPair(grabbedlink, grabbedlink)
 
-def run_trajectory(robot, traj, animationtime=1.0, n=100):
+def run_trajectory(robot, traj, animationtime=4.0, n=100):
   """
   Crude way of executing trajectories and update the OpenRave environment
   without having to enable OpenRave simulation.

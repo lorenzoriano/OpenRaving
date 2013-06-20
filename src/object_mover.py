@@ -42,8 +42,9 @@ class ObjectMover(object):
     self._execute_traj(traj)
 
     # trajectory to grasp
-    traj = self._get_grasping_trajectory(obj)
-    self._execute_traj(traj)
+    trajs = self._get_grasping_trajectories(obj)
+    for traj in trajs:
+      self._execute_traj(traj)
 
     # close gripper
     self.robot.Grab(obj)
@@ -110,7 +111,7 @@ class ObjectMover(object):
       #raw_input("Press enter when real PR2 is done moving...")  # temporary fix for above
     print("Trajectory execution complete!")
 
-  def _get_grasping_trajectory(self, obj_to_grasp):
+  def _get_grasping_trajectories(self, obj_to_grasp):
     """
     Finds a valid grasping trajectory or raises an ObjectMoveError
     if a valid trajectory cannot be found
@@ -123,30 +124,30 @@ class ObjectMover(object):
     """
     obj_name = obj_to_grasp.GetName()
 
-    traj = self.traj_cache.get(obj_name, None)
-    if traj is not None:
+    trajs = self.traj_cache.get(obj_name, None)
+    if trajs is not None:
       print "Using existing traj in cache!"
-      return traj
+      return trajs
 
 
     grasp_pose_list = self.grasp_pose_generator.generate_poses(obj_to_grasp)
 
     print "Trying to find a collision-free trajectory..."
-    traj, _ = self.grasp_trajectory_generator.generate_grasping_traj(
+    trajs, _ = self.grasp_trajectory_generator.generate_grasping_trajs(
       obj_to_grasp, grasp_pose_list)
 
-    if traj is not None:
+    if trajs is not None:
       print "Found a collision-free trajectory!!"
-      return traj
+      return trajs
     print "No collision-free trajectory found!"
 
     print "Trying to find any trajectory..."
-    traj, collisions = self.grasp_trajectory_generator.generate_grasping_traj(
+    trajs, collisions = self.grasp_trajectory_generator.generate_grasping_trajs(
       obj_to_grasp, grasp_pose_list, collisionfree=False)
 
-    if traj is not None:
+    if trajs is not None:
       print "Trajectory found with collisions: {}".format(collisions)
-      self.traj_cache[obj_name] = traj
+      self.traj_cache[obj_name] = trajs
       e = ObjectMoveError()
       e.collision_list = [obj.GetName() for obj in collisions]
       raise e
