@@ -90,6 +90,7 @@ class GraspPoseGenerator2(object):
     self.robot = self.env.GetRobots()[0]
     self.num_grasps = 16
     self.height_offset = 0.04
+    self.dist_offset = 0.02
 
   def generate_poses(self, obj, approach_dist=0.15):
     """
@@ -106,12 +107,13 @@ class GraspPoseGenerator2(object):
       rot_ang = i * (2 * np.pi) / self.num_grasps
 
       r1 = openravepy.matrixFromQuat((0.7071, 0, 0, 0.7071))
+      t2 = openravepy.matrixFromPose((1, 0, 0, 0, 0, 0, self.dist_offset))
       r2 = openravepy.matrixFromAxisAngle((0, rot_ang, 0))
-      t2 = openravepy.matrixFromPose((1, 0, 0, 0, 0, self.height_offset, 0))
-      grasp_pose = t1.dot(t2).dot(r2).dot(r1)
+      t3 = openravepy.matrixFromPose((1, 0, 0, 0, 0, self.height_offset, 0))
+      grasp_pose = t1.dot(t3).dot(r2).dot(t2).dot(r1)
 
-      t3 = openravepy.matrixFromPose((1, 0, 0, 0, 0, 0, -approach_dist))
-      pre_grasp_pose = grasp_pose.dot(t3)
+      t4 = openravepy.matrixFromPose((1, 0, 0, 0, 0, 0, -approach_dist))
+      pre_grasp_pose = grasp_pose.dot(t4)
 
       grasp_pose_list.append((grasp_pose, pre_grasp_pose))
 
