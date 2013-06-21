@@ -44,8 +44,8 @@ class ObjectMover(object):
 
     # trajectory to grasp
     trajs, manip = self._test_and_get_grasping_trajs(obj)
-    for traj in trajs:
-      self._execute_traj(traj)
+    self._execute_traj(trajs[0])
+    self._execute_traj(trajs[1], speed=0.2)
 
     # close gripper
     self.robot.SetActiveManipulator(manip)
@@ -111,7 +111,7 @@ class ObjectMover(object):
     T[2, 3] = z
     obj.SetTransform(T)
 
-  def _execute_traj(self, traj):
+  def _execute_traj(self, traj, speed=1.0):
     print("Executing trajectory...")
     utils.run_trajectory(self.robot, traj)
     if self.use_ros:
@@ -121,8 +121,8 @@ class ObjectMover(object):
         traj_r.append(joints[:7])
         traj_l.append(joints[7:])
       raw_input("Press enter to run trajectory on PR2")
-      self.pr2.rarm.follow_joint_trajectory(traj_r)
-      self.pr2.larm.follow_joint_trajectory(traj_l)
+      self.pr2.rarm.follow_joint_trajectory(traj_r, speed)
+      self.pr2.larm.follow_joint_trajectory(traj_l, speed)
       self.pr2.join_all()
     print("Trajectory execution complete!")
 

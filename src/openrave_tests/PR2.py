@@ -217,12 +217,12 @@ class TrajectoryControllerWrapper(object):
         self.pr2.start_thread(JustWaitThread(duration))
     
 
-    def follow_joint_trajectory(self, traj):
+    def follow_joint_trajectory(self, traj, speed=1.0):
         traj = np.r_[np.atleast_2d(self.get_joint_positions()), traj]
         for i in [2,4,6]:
             traj[:,i] = np.unwrap(traj[:,i])
 
-        times = retiming.retime_with_vel_limits(traj, self.vel_limits)
+        times = retiming.retime_with_vel_limits(traj, self.vel_limits*speed)
         times_up = np.arange(0,times[-1],.1)
         traj_up = mu.interp2d(times_up, times, traj)
         vels = ku.get_velocities(traj_up, times_up, .001)
