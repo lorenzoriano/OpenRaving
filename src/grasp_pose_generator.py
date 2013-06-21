@@ -56,6 +56,11 @@ class GraspPoseGenerator(object):
         with open(GRASPS_FILE_NAME, 'w') as outfile:
           outfile.write(data)
 
+    # only use grasps in the upper half (+y is up)
+    upper_grasp_filter = lambda g: \
+      gmodel.GetLocalGraspTransform(g, collisionfree=True)[1][3] > 0
+    gmodel.grasps = filter(upper_grasp_filter, gmodel.grasps)
+
     openravepy.raveLogInfo("Generating grasps")
     validgrasps, _ = gmodel.computeValidGrasps(checkcollision=False, 
                                                checkik=False,

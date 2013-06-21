@@ -58,15 +58,19 @@ class ObjectMover(object):
         self.pr2.lgrip.close()
 
     # lift object
-    # link = self.robot.GetLink('r_gripper_tool_frame')
-    # mat = link.GetTransform()
-    # mat[2][3] += 0.010
-    # pose = openravepy.poseFromMatrix(mat).tolist()
-    # pos = pose[4:7]
-    # rot = pose[:4]
-    # traj, _ = self.traj_generator.plan(pos, rot, n_steps=2,
-    #                                                   collisionfree=False)
-    # self._execute_traj(traj)
+    if manip == 'rightarm':
+      link = self.robot.GetLink('r_gripper_tool_frame')
+    elif manip == 'leftarm':
+      link = self.robot.GetLink('l_gripper_tool_frame')
+    mat = link.GetTransform()
+    mat[2][3] += 0.2
+    pose = openravepy.poseFromMatrix(mat).tolist()
+    pos = pose[4:7]
+    rot = pose[:4]
+    rot = openravepy.quatMultiply(rot, (0.7071, 0, 0.7071, 0)).tolist()
+    traj, _ = self.traj_generator.traj_from_pose(pos, rot, n_steps=2,
+      manip=manip, collisionfree=False)
+    self._execute_traj(traj, speed=0.5)
 
   def drop(self, obj, table):
     manip = self.robot.GetActiveManipulator().GetName()
