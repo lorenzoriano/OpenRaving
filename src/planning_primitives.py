@@ -69,7 +69,7 @@ class Executor(object):
             self.arm_mover = PR2MoveArm()
         
         #loading the IK models
-        utils.pr2_tuck_arm(robot)
+        # utils.pr2_tuck_arm(robot)
         robot.SetActiveManipulator('leftarm')
         ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
                         robot,iktype=openravepy.IkParameterization.Type.Transform6D)    
