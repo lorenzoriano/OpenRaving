@@ -70,8 +70,8 @@ class TrajoptPlanner(MotionPlanner):
           "type" : "collision",
           "name" : "cont_col_free",
           "params" : {
-            "coeffs" : [20],
-            "dist_pen" : [0.02]
+            "coeffs" : [30],
+            "dist_pen" : [0.03]
           }
         },
         {
