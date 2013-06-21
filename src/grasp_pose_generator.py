@@ -82,3 +82,38 @@ class GraspPoseGenerator(object):
       grasp_pose_list.append((grasp_pose, pre_grasp_pose))
 
     return grasp_pose_list
+
+
+class GraspPoseGenerator2(object):
+  def __init__(self, env):
+    self.env = env
+    self.robot = self.env.GetRobots()[0]
+    self.num_grasps = 16
+    self.height_offset = 0.04
+
+  def generate_poses(self, obj, approach_dist=0.15):
+    """
+    Parameters:
+
+    Returns:
+    Returns a list of tuples (grasp_pose, pre_grasp_pose)
+    Where grasp_pose and pre_grasp_pose are both 4x4 transformation matrices
+    """
+    t1 = obj.GetTransform()
+
+    grasp_pose_list = []
+    for i in range(self.num_grasps):
+      rot_ang = i * (2 * np.pi) / self.num_grasps
+
+      r1 = openravepy.matrixFromQuat((0.7071, 0, 0, 0.7071))
+      r2 = openravepy.matrixFromAxisAngle((0, rot_ang, 0))
+      t2 = openravepy.matrixFromPose((1, 0, 0, 0, 0, self.height_offset, 0))
+      grasp_pose = t1.dot(t2).dot(r2).dot(r1)
+
+      t3 = openravepy.matrixFromPose((1, 0, 0, 0, 0, 0, -approach_dist))
+      pre_grasp_pose = grasp_pose.dot(t3)
+
+      grasp_pose_list.append((grasp_pose, pre_grasp_pose))
+
+    np.random.shuffle(grasp_pose_list)
+    return grasp_pose_list

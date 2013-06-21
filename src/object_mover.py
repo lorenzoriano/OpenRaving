@@ -4,7 +4,7 @@ import utils
 from openrave_tests.PlannerPR2 import PlannerPR2
 from openrave_tests.PR2 import mirror_arm_joints, Arm
 from trajectory_generator import TrajectoryGenerator, PickTrajGenerator
-from grasp_pose_generator import GraspPoseGenerator
+from grasp_pose_generator import GraspPoseGenerator2
 
 
 class ObjectMover(object):
@@ -14,7 +14,7 @@ class ObjectMover(object):
     self.traj_cache = {}
     self.use_ros = use_ros
     self.unmovable_objects = unmovable_objects
-    self.grasp_pose_generator = GraspPoseGenerator(self.env)
+    self.grasp_pose_generator = GraspPoseGenerator2(self.env)
     self.traj_generator = TrajectoryGenerator(self.env)
     self.pick_traj_generator = PickTrajGenerator(self.env,
       unmovable_objects)
