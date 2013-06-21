@@ -35,24 +35,24 @@ class TrajectoryGenerator(object):
     # quaternions are rotated by pi/2 around y for some reason...
     rot = openravepy.quatMultiply(rot, (0.7071, 0, -0.7071, 0)).tolist()
 
-    traj = self.motion_planner.plan_with_pose(pos, rot, collisionfree,
+    traj, cost = self.motion_planner.plan_with_pose(pos, rot, collisionfree,
       joint_targets, n_steps, manip=manip)
     collisions = self.collision_checker.get_collisions(traj)
     if collisionfree and collisions:
-      return None, collisions
+      return None, float('inf'), collisions
     else:
-      return traj, collisions
+      return traj, cost, collisions
 
   def traj_from_joints(self, joint_targets,
                        collisionfree=True,
                        n_steps=None):
-    traj = self.motion_planner.plan_with_joints(joint_targets, collisionfree,
+    traj, cost = self.motion_planner.plan_with_joints(joint_targets, collisionfree,
       n_steps)
     collisions = self.collision_checker.get_collisions(traj)
     if collisionfree and collisions:
-      return None, collisions
+      return None, float('inf'), collisions
     else:
-      return traj, collisions
+      return traj, cost, collisions
 
   def optimize_traj(self, init_traj, collisionfree=True, manip='rightarm'):
     """
@@ -63,15 +63,15 @@ class TrajectoryGenerator(object):
     returns the original trajectory.
     """
     try:
-      traj = self.motion_planner.optimize_traj(init_traj, manip,
+      traj, cost = self.motion_planner.optimize_traj(init_traj, manip,
         collisionfree=collisionfree)
     except NotImplementedError:
       print "Motion planner does not support optimizng trajectories!"
     collisions = self.collision_checker.get_collisions(traj)
     if collisionfree and collisions:
-      return None, collisions
+      return None, float('inf'), collisions
     else:
-      return traj, collisions
+      return traj, cost, collisions
 
 
 class PickTrajGenerator(object):
@@ -86,17 +86,17 @@ class PickTrajGenerator(object):
       with self.env:
         orig_values = self.robot.GetDOFValues(self.robot.GetActiveDOFIndices())
 
-        opt_traj1, col1 = self.traj_generator.optimize_traj(init_trajs[0],
+        opt_traj1, _, col1 = self.traj_generator.optimize_traj(init_trajs[0],
           collisionfree=collisionfree, manip=manip)
 
         self.env.Remove(obj_to_grasp)
 
         self.robot.SetDOFValues(opt_traj1[-1], self.robot.GetActiveDOFIndices())
-        opt_traj2, col2 = self.traj_generator.optimize_traj(init_trajs[1],
+        opt_traj2, _, col2 = self.traj_generator.optimize_traj(init_trajs[1],
           collisionfree=collisionfree, manip=manip)
 
         self.robot.SetDOFValues(opt_traj2[-1], self.robot.GetActiveDOFIndices())
-        opt_traj3, col3 = self.traj_generator.optimize_traj(init_trajs[2],
+        opt_traj3, _, col3 = self.traj_generator.optimize_traj(init_trajs[2],
           collisionfree=collisionfree, manip=manip)
 
         # reset
@@ -109,16 +109,17 @@ class PickTrajGenerator(object):
   def min_arm_col_picking_trajs(self, obj, grasp_pose_list, collisionfree=True):
     """
     Calls generate_picking_trajs() with each arm and returns the trajectory
-    with the fewest collisions.
+    with the fewest collisions. If two arms have the same number of collisions,
+    uses motion planner cost.
 
     Returns the tuple: (trajectories, collisions, manip)
     trajectories: list of trajectories returned by _generate_picking_trajs()
     collisions: set of collisions returned by _generate_picking_trajs()
     manip: the manipulator ('rightarm' or 'leftarm') chosen
     """
-    trajs_r, col_r, manip_r = self.right_arm_picking_trajs(obj, grasp_pose_list,
+    trajs_r, cost_r, col_r, manip_r = self.right_arm_picking_trajs(obj, grasp_pose_list,
       collisionfree=collisionfree)
-    trajs_l, col_l, manip_l = self.left_arm_picking_trajs(obj, grasp_pose_list,
+    trajs_l, cost_l, col_l, manip_l = self.left_arm_picking_trajs(obj, grasp_pose_list,
       collisionfree=collisionfree)
 
     if (trajs_r is not None) and (trajs_l is None):
@@ -126,24 +127,29 @@ class PickTrajGenerator(object):
     elif (trajs_r is None) and (trajs_l is not None):
       return trajs_l, col_l, manip_l
     elif (trajs_r is not None) and (trajs_l is not None):
-      if len(col_r) <= len(col_l):
+      if len(col_r) < len(col_l):
         return trajs_r, col_r, manip_r
-      else:
+      elif len(col_r) > len(col_l):
         return trajs_l, col_l, manip_l
+      else:
+        if cost_r <= cost_l:
+          return trajs_r, col_r, manip_r
+        else:
+          return trajs_l, col_l, manip_l
     else:
       return None, set(), None
 
   def right_arm_picking_trajs(self, obj, grasp_pose_list, collisionfree=True):
     manip = 'rightarm'
-    trajs, col = self._generate_picking_trajs(obj, grasp_pose_list,
+    trajs, cost, col = self._generate_picking_trajs(obj, grasp_pose_list,
       collisionfree=collisionfree, manip=manip)
-    return trajs, col, manip
+    return trajs, cost, col, manip
 
   def left_arm_picking_trajs(self, obj, grasp_pose_list, collisionfree=True):
     manip = 'leftarm'
-    trajs, col = self._generate_picking_trajs(obj, grasp_pose_list,
+    trajs, cost, col = self._generate_picking_trajs(obj, grasp_pose_list,
       collisionfree=collisionfree, manip=manip)
-    return trajs, col, manip
+    return trajs, cost, col, manip
 
   def _generate_picking_trajs(self, obj, grasp_pose_list, collisionfree=True,
     manip='rightarm'):
@@ -205,7 +211,7 @@ class PickTrajGenerator(object):
       xyz_target1 = gripper_pose1[4:]
       quat_target1 = gripper_pose1[:4]
 
-      traj1, collisions1 = self.traj_generator.traj_from_pose(
+      traj1, cost1, collisions1 = self.traj_generator.traj_from_pose(
         xyz_target1, quat_target1,
         collisionfree=collisionfree, joint_targets=init_joints1.tolist(),
         manip=manip)
@@ -223,7 +229,7 @@ class PickTrajGenerator(object):
         xyz_target2 = gripper_pose2[4:]
         quat_target2 = gripper_pose2[:4]
 
-        traj2, collisions2 = self.traj_generator.traj_from_pose(
+        traj2, cost2, collisions2 = self.traj_generator.traj_from_pose(
           xyz_target2, quat_target2, n_steps=2,
           collisionfree=collisionfree, joint_targets=init_joints2.tolist(),
           manip=manip)
@@ -240,7 +246,7 @@ class PickTrajGenerator(object):
         xyz_target3 = gripper_pose3[4:]
         quat_target3 = gripper_pose3[:4]
 
-        traj3, collisions3 = self.traj_generator.traj_from_pose(
+        traj3, cost3, collisions3 = self.traj_generator.traj_from_pose(
           xyz_target3, quat_target3, n_steps=2,
           collisionfree=collisionfree, joint_targets=init_joints3.tolist(),
           manip=manip)
@@ -260,6 +266,7 @@ class PickTrajGenerator(object):
       if self.unmovable_objects.intersection(collisions):
         continue
 
-      return [traj1.tolist(), traj2.tolist(), traj3.tolist()], collisions
+      return ([traj1.tolist(), traj2.tolist(), traj3.tolist()],
+        cost1 + cost2 + cost3, collisions)
 
-    return None, set()
+    return None, float('inf'), set()

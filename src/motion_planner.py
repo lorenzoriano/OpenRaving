@@ -100,7 +100,8 @@ class TrajoptPlanner(MotionPlanner):
       prob = trajoptpy.ConstructProblem(json.dumps(request), self.env)
       result = trajoptpy.OptimizeProblem(prob)
       traj = result.GetTraj()
-      return traj
+      total_cost = sum(cost[1] for cost in result.GetCosts())
+      return traj, total_cost
 
   def plan_with_pose(self, pos, rot,
                      collisionfree=True,

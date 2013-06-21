@@ -39,7 +39,7 @@ class ObjectMover(object):
     # always start at same place
     left_joints = Arm.L_POSTURES['side']
     right_joints = mirror_arm_joints(left_joints).tolist()
-    traj, _ = self.traj_generator.traj_from_joints(right_joints + left_joints)
+    traj, _, _ = self.traj_generator.traj_from_joints(right_joints + left_joints)
     self._execute_traj(traj)
 
     # trajectory to grasp and lift
@@ -69,7 +69,7 @@ class ObjectMover(object):
     if manip == 'leftarm':
       pos1[1] *= -1
 
-    traj1, _ = self.traj_generator.traj_from_pose(pos1, rot, manip=manip)
+    traj1, _, _= self.traj_generator.traj_from_pose(pos1, rot, manip=manip)
     self._execute_traj(traj1.tolist())
 
     # with self.env:
