@@ -3,7 +3,7 @@ import openravepy
 import utils
 from openrave_tests.PlannerPR2 import PlannerPR2
 from openrave_tests.PR2 import mirror_arm_joints, Arm
-from trajectory_generator import TrajectoryGenerator, GraspTrajectoryGenerator
+from trajectory_generator import TrajectoryGenerator, PickTrajGenerator
 from grasp_pose_generator import GraspPoseGenerator
 
 
@@ -16,7 +16,7 @@ class ObjectMover(object):
     self.unmovable_objects = unmovable_objects
     self.grasp_pose_generator = GraspPoseGenerator(self.env)
     self.traj_generator = TrajectoryGenerator(self.env)
-    self.grasp_trajectory_generator = GraspTrajectoryGenerator(self.env,
+    self.pick_traj_generator = PickTrajGenerator(self.env,
       unmovable_objects)
     if self.use_ros:
       self.pr2 = PlannerPR2(self.robot)
@@ -42,10 +42,10 @@ class ObjectMover(object):
     traj, _ = self.traj_generator.traj_from_joints(right_joints + left_joints)
     self._execute_traj(traj)
 
-    # trajectory to grasp
-    trajs, manip = self._test_and_get_grasping_trajs(obj)
-    self._execute_traj(trajs[0])
-    self._execute_traj(trajs[1], speed=0.2)
+    # trajectory to grasp and lift
+    trajs, manip = self._test_and_get_picking_trajs(obj)
+    self._execute_traj(trajs[0])            # pregrasp
+    self._execute_traj(trajs[1], speed=0.2) # grasp
 
     # close gripper
     self.robot.SetActiveManipulator(manip)
@@ -57,20 +57,8 @@ class ObjectMover(object):
       elif manip == 'leftarm':
         self.pr2.lgrip.close()
 
-    # lift object
-    if manip == 'rightarm':
-      link = self.robot.GetLink('r_gripper_tool_frame')
-    elif manip == 'leftarm':
-      link = self.robot.GetLink('l_gripper_tool_frame')
-    mat = link.GetTransform()
-    mat[2][3] += 0.2
-    pose = openravepy.poseFromMatrix(mat).tolist()
-    pos = pose[4:7]
-    rot = pose[:4]
-    rot = openravepy.quatMultiply(rot, (0.7071, 0, 0.7071, 0)).tolist()
-    traj, _ = self.traj_generator.traj_from_pose(pos, rot, n_steps=2,
-      manip=manip, collisionfree=False)
-    self._execute_traj(traj, speed=0.5)
+    self._execute_traj(trajs[2], speed=0.5) # lift
+
 
   def drop(self, obj, table):
     manip = self.robot.GetActiveManipulator().GetName()
@@ -130,13 +118,13 @@ class ObjectMover(object):
       self.pr2.join_all()
     print("Trajectory execution complete!")
 
-  def _test_and_get_grasping_trajs(self, obj_to_grasp):
+  def _test_and_get_picking_trajs(self, obj_to_grasp):
     """
-    Finds a valid grasping trajectory or raises an ObjectMoveError
+    Finds a valid picking trajectory or raises an ObjectMoveError
     if a valid trajectory cannot be found
 
     Parameters:
-    obj_to_grasp: Object for which to compute a grasping trajectory
+    obj_to_grasp: Object for which to compute a picking trajectory
     
     Returns:
     A 14-DOF (rightarm + leftarm) trajectory represented as an array of arrays
@@ -146,7 +134,7 @@ class ObjectMover(object):
     trajs, manip = self.traj_cache.get(obj_name, (None, None))
     if trajs is not None:
       print "Using existing traj in cache!"
-      opt_trajs, cols, manip = self.grasp_trajectory_generator.optimize_grasping_trajs(trajs, manip, obj_to_grasp)
+      opt_trajs, cols, manip = self.pick_traj_generator.optimize_picking_trajs(trajs, manip, obj_to_grasp)
       if not cols:
         return opt_trajs, manip
       else:
@@ -155,7 +143,7 @@ class ObjectMover(object):
     grasp_pose_list = self.grasp_pose_generator.generate_poses(obj_to_grasp)
 
     print "Trying to find a collision-free trajectory..."
-    trajs, _, manip = self.grasp_trajectory_generator.min_arm_col_grasping_trajs(
+    trajs, _, manip = self.pick_traj_generator.min_arm_col_picking_trajs(
       obj_to_grasp, grasp_pose_list)
 
     if trajs is not None:
@@ -164,7 +152,7 @@ class ObjectMover(object):
     print "No collision-free trajectory found!"
 
     print "Trying to find any trajectory..."
-    trajs, collisions, manip = self.grasp_trajectory_generator.min_arm_col_grasping_trajs(
+    trajs, collisions, manip = self.pick_traj_generator.min_arm_col_picking_trajs(
       obj_to_grasp, grasp_pose_list, collisionfree=False)
 
     if trajs is not None:

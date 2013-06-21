@@ -74,43 +74,51 @@ class TrajectoryGenerator(object):
       return traj, collisions
 
 
-class GraspTrajectoryGenerator(object):
-  def __init__(self, env, unmovable_objects=set()):
+class PickTrajGenerator(object):
+  def __init__(self, env, unmovable_objects=set(), lift_amount=0.2):
     self.env = env
     self.robot = self.env.GetRobots()[0]
     self.unmovable_objects = unmovable_objects
     self.traj_generator = TrajectoryGenerator(self.env)
+    self.lift_amount = lift_amount
 
-  def optimize_grasping_trajs(self, init_trajs, manip, obj_to_grasp, collisionfree=True):
+  def optimize_picking_trajs(self, init_trajs, manip, obj_to_grasp, collisionfree=True):
       with self.env:
         orig_values = self.robot.GetDOFValues(self.robot.GetActiveDOFIndices())
 
         opt_traj1, col1 = self.traj_generator.optimize_traj(init_trajs[0],
           collisionfree=collisionfree, manip=manip)
-        self.robot.SetDOFValues(opt_traj1[-1], self.robot.GetActiveDOFIndices())
+
         self.env.Remove(obj_to_grasp)
+
+        self.robot.SetDOFValues(opt_traj1[-1], self.robot.GetActiveDOFIndices())
         opt_traj2, col2 = self.traj_generator.optimize_traj(init_trajs[1],
           collisionfree=collisionfree, manip=manip)
-        self.env.AddKinBody(obj_to_grasp)
+
+        self.robot.SetDOFValues(opt_traj2[-1], self.robot.GetActiveDOFIndices())
+        opt_traj3, col3 = self.traj_generator.optimize_traj(init_trajs[2],
+          collisionfree=collisionfree, manip=manip)
 
         # reset
+        self.env.AddKinBody(obj_to_grasp)
         self.robot.SetDOFValues(orig_values, self.robot.GetActiveDOFIndices())
 
-      return [opt_traj1.tolist(), opt_traj2.tolist()], col1.union(col2), manip
+      return ([opt_traj1.tolist(), opt_traj2.tolist(), opt_traj3.tolist()],
+        col1.union(col2).union(col3), manip)
 
-  def min_arm_col_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
+  def min_arm_col_picking_trajs(self, obj, grasp_pose_list, collisionfree=True):
     """
-    Calls generate_grasping_trajs() with each arm and returns the trajectory
+    Calls generate_picking_trajs() with each arm and returns the trajectory
     with the fewest collisions.
 
     Returns the tuple: (trajectories, collisions, manip)
-    trajectories: list of trajectories returned by _generate_grasping_trajs()
-    collisions: set of collisions returned by _generate_grasping_trajs()
+    trajectories: list of trajectories returned by _generate_picking_trajs()
+    collisions: set of collisions returned by _generate_picking_trajs()
     manip: the manipulator ('rightarm' or 'leftarm') chosen
     """
-    trajs_r, col_r, manip_r = self.right_arm_grasping_trajs(obj, grasp_pose_list,
+    trajs_r, col_r, manip_r = self.right_arm_picking_trajs(obj, grasp_pose_list,
       collisionfree=collisionfree)
-    trajs_l, col_l, manip_l = self.left_arm_grasping_trajs(obj, grasp_pose_list,
+    trajs_l, col_l, manip_l = self.left_arm_picking_trajs(obj, grasp_pose_list,
       collisionfree=collisionfree)
 
     if (trajs_r is not None) and (trajs_l is None):
@@ -125,29 +133,33 @@ class GraspTrajectoryGenerator(object):
     else:
       return None, set(), None
 
-  def right_arm_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
+  def right_arm_picking_trajs(self, obj, grasp_pose_list, collisionfree=True):
     manip = 'rightarm'
-    trajs, col = self._generate_grasping_trajs(obj, grasp_pose_list,
+    trajs, col = self._generate_picking_trajs(obj, grasp_pose_list,
       collisionfree=collisionfree, manip=manip)
     return trajs, col, manip
 
-  def left_arm_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True):
+  def left_arm_picking_trajs(self, obj, grasp_pose_list, collisionfree=True):
     manip = 'leftarm'
-    trajs, col = self._generate_grasping_trajs(obj, grasp_pose_list,
+    trajs, col = self._generate_picking_trajs(obj, grasp_pose_list,
       collisionfree=collisionfree, manip=manip)
     return trajs, col, manip
 
-  def _generate_grasping_trajs(self, obj, grasp_pose_list, collisionfree=True,
+  def _generate_picking_trajs(self, obj, grasp_pose_list, collisionfree=True,
     manip='rightarm'):
     """
-    Returns a list of trajectories, one for each step of the grasp.
-    Currently, there are two trajectories:
+    Returns a list of trajectories, one for each step of the pick.
+    Currently, there are three trajectories:
     1: trajectory from initial position to pregrasp
     2: trajectory from pregrasp to grasp
+    3: trajectory for lifting up
     """
     manip_to_use = self.robot.GetManipulator(manip)
 
     for grasp_pose, pre_grasp_pose in grasp_pose_list:
+      lift_pose = grasp_pose.copy()
+      lift_pose[2][3] += self.lift_amount
+
       # find IK for pregrasp
       if collisionfree:
         init_joints1 = manip_to_use.FindIKSolution(pre_grasp_pose,
@@ -155,22 +167,40 @@ class GraspTrajectoryGenerator(object):
       else:
         init_joints1 = manip_to_use.FindIKSolution(pre_grasp_pose,
           openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
+      if init_joints1 is None:
+        continue
 
       with self.env:
-        # find IK for grasp
         self.env.Remove(obj)
+
+        # find IK for grasp
         if collisionfree:
           init_joints2 = manip_to_use.FindIKSolution(grasp_pose,
             openravepy.IkFilterOptions.CheckEnvCollisions)
         else:
           init_joints2 = manip_to_use.FindIKSolution(grasp_pose,
             openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
+        if init_joints2 is None:
+          # reset
+          self.env.AddKinBody(obj)
+          continue
+
+        # find IK for lift
+        if collisionfree:
+          init_joints3 = manip_to_use.FindIKSolution(lift_pose,
+            openravepy.IkFilterOptions.CheckEnvCollisions)
+        else:
+          init_joints3 = manip_to_use.FindIKSolution(lift_pose,
+            openravepy.IkFilterOptions.IgnoreEndEffectorCollisions)
+        if init_joints3 is None:
+          # reset
+          self.env.AddKinBody(obj)
+          continue          
+
+        # reset
         self.env.AddKinBody(obj)
 
-      if (init_joints1 is None) or (init_joints2 is None):
-        continue
-
-      # find traj for pregrasp
+      # find trajectory for pregrasp
       gripper_pose1 = openravepy.poseFromMatrix(pre_grasp_pose).tolist()
       xyz_target1 = gripper_pose1[4:]
       quat_target1 = gripper_pose1[:4]
@@ -183,33 +213,53 @@ class GraspTrajectoryGenerator(object):
         continue
 
       with self.env:
-        # find trajectory to grasp
         orig_values = self.robot.GetDOFValues(self.robot.GetActiveDOFIndices())
+        self.env.Remove(obj)
+
+        # find trajectory to grasp
         self.robot.SetDOFValues(traj1[-1], self.robot.GetActiveDOFIndices())
 
         gripper_pose2 = openravepy.poseFromMatrix(grasp_pose).tolist()
         xyz_target2 = gripper_pose2[4:]
         quat_target2 = gripper_pose2[:4]
 
-        self.env.Remove(obj)
         traj2, collisions2 = self.traj_generator.traj_from_pose(
           xyz_target2, quat_target2, n_steps=2,
           collisionfree=collisionfree, joint_targets=init_joints2.tolist(),
           manip=manip)
-        self.env.AddKinBody(obj)
+        if traj2 is None:
+          # reset
+          self.robot.SetDOFValues(orig_values, self.robot.GetActiveDOFIndices())
+          self.env.AddKinBody(obj)
+          continue
+
+        # find trajectory to lift
+        self.robot.SetDOFValues(traj2[-1], self.robot.GetActiveDOFIndices())
+
+        gripper_pose3 = openravepy.poseFromMatrix(lift_pose).tolist()
+        xyz_target3 = gripper_pose3[4:]
+        quat_target3 = gripper_pose3[:4]
+
+        traj3, collisions3 = self.traj_generator.traj_from_pose(
+          xyz_target3, quat_target3, n_steps=2,
+          collisionfree=collisionfree, joint_targets=init_joints3.tolist(),
+          manip=manip)
+        if traj3 is None:
+          # reset
+          self.robot.SetDOFValues(orig_values, self.robot.GetActiveDOFIndices())
+          self.env.AddKinBody(obj)
+          continue
 
         # reset
         self.robot.SetDOFValues(orig_values, self.robot.GetActiveDOFIndices())
+        self.env.AddKinBody(obj)
 
-      if traj2 is None:
-        continue
-
-      collisions = collisions1.union(collisions2)
+      collisions = collisions1.union(collisions2).union(collisions3)
       if obj in collisions:
         collisions.remove(obj)
       if self.unmovable_objects.intersection(collisions):
         continue
 
-      return [traj1.tolist(), traj2.tolist()], collisions
+      return [traj1.tolist(), traj2.tolist(), traj3.tolist()], collisions
 
     return None, set()
