@@ -58,7 +58,7 @@ class GraspPoseGenerator(object):
 
     # only use grasps in the upper half (+y is up)
     upper_grasp_filter = lambda g: \
-      gmodel.GetLocalGraspTransform(g, collisionfree=True)[1][3] > 0
+      gmodel.GetLocalGraspTransform(g, collisionfree=True)[1][3] > 0.03
     gmodel.grasps = filter(upper_grasp_filter, gmodel.grasps)
 
     openravepy.raveLogInfo("Generating grasps")
