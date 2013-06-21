@@ -112,7 +112,6 @@ class ObjectMover(object):
       for joints in traj:
         traj_r.append(joints[:7])
         traj_l.append(joints[7:])
-      raw_input("Press enter to run trajectory on PR2")
       self.pr2.rarm.follow_joint_trajectory(traj_r, speed)
       self.pr2.larm.follow_joint_trajectory(traj_l, speed)
       self.pr2.join_all()
