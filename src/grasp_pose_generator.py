@@ -89,7 +89,7 @@ class GraspPoseGenerator2(object):
     self.env = env
     self.robot = self.env.GetRobots()[0]
     self.num_grasps = 16
-    self.height_offset = 0.04
+    self.height_offset = 0.05
     self.dist_offset = 0.02
 
   def generate_poses(self, obj, approach_dist=0.15):
